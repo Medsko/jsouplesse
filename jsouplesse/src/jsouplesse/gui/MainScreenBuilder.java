@@ -19,6 +19,7 @@ import jsouplesse.dataaccess.Connector;
 import jsouplesse.dataaccess.SqlHelper;
 import jsouplesse.singlepage.ScrapeService;
 import jsouplesse.singlepage.ScraperInput;
+import jsouplesseutil.CrappyLogger;
 
 public class MainScreenBuilder {
 	
@@ -28,6 +29,8 @@ public class MainScreenBuilder {
 	
 	private SqlHelper sqlHelper;
 	
+	private CrappyLogger logger;
+	
 	private TextField inputPageUrl;
 	
 	private TextField inputTagName;
@@ -36,9 +39,10 @@ public class MainScreenBuilder {
 	
 	private ScrapeService service;
 	
-	public MainScreenBuilder(Connector connector) {
+	public MainScreenBuilder(Connector connector, CrappyLogger logger) {
 //		this.connector = connector;
 		sqlHelper = new SqlHelper(connector);
+		this.logger = logger;
 	}
 	
 	public GridPane buildScreen() {
@@ -72,7 +76,7 @@ public class MainScreenBuilder {
 		
 		mainScreen.getColumnConstraints().addAll(columnOneConstraints, columnTwoConstraints);
 
-		service = new ScrapeService(sqlHelper);
+		service = new ScrapeService(sqlHelper, logger);
 		
 		addInputFields(mainScreen);
 		

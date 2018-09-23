@@ -11,24 +11,25 @@ import javafx.scene.layout.GridPane;
 import javafx.stage.Stage;
 import javafx.stage.WindowEvent;
 import jsouplesse.dataaccess.Connector;
+import jsouplesseutil.CrappyLogger;
 import jsouplesseutil.IOUtils;
 
 public class Co2OkScrapeOnDemandApplication extends Application {
 
 	private Connector connector;
 	
+	private CrappyLogger logger;
+	
 	@Override
 	public void start(Stage primaryStage) throws Exception {
 		
-		Path dbDirectory = Paths.get("C:/scrapeOnDemand/sqlite");
-		
-		if (IOUtils.fileNotExistsAndIsWritable(dbDirectory)) {
-			Files.createDirectories(dbDirectory);
-		}
-		
+		// Since FailedScan is not yet used, do not initialize the Connector.
 		connector = new Connector();
 		
-		MainScreenBuilder builder = new MainScreenBuilder(connector);
+		// Instantiate a logger that writes to a log file.
+		logger = new CrappyLogger(false);
+		
+		MainScreenBuilder builder = new MainScreenBuilder(connector, logger);
 		GridPane mainScreen = builder.buildScreen();
 		
 		Scene main = new Scene(mainScreen, 800, 550);
@@ -50,7 +51,8 @@ public class Co2OkScrapeOnDemandApplication extends Application {
 			public void handle(WindowEvent event) {
 				// Close the connection to the database.
 				connector.close();
-				System.out.println("Connection to the database closed.");
+				logger.log("Connection to the database closed.");
+				logger.deInitialize();
 			}
 		});
 	}

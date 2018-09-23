@@ -4,6 +4,9 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -12,6 +15,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 
 import jsouplesseutil.DBUtils;
+import jsouplesseutil.IOUtils;
 
 /**
  * Creates and manages the connection to the database. If the application is run for the
@@ -32,6 +36,18 @@ public class Connector {
 	private boolean isDatabaseCreated = false;
 	
 	public boolean initialize() {
+		
+		Path dbDirectory = Paths.get("C:/jsouplesse/sqlite");
+		
+		try {
+			if (IOUtils.fileNotExistsAndIsWritable(dbDirectory)) {
+				Files.createDirectories(dbDirectory);
+			}
+		} catch (IOException ioex) {
+			// Log this with logger.
+		}
+		
+		
 		try {
 			// Get a connection to the database from the driver manager (and possibly create the 
 			// database - if this is first run).

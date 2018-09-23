@@ -51,6 +51,11 @@ public class IOUtils {
 		return true;
 	}
 	
+	/**
+	 * To fully understand this method, read javadoc for the methods 
+	 * {@link Files#notExists(Path, java.nio.file.LinkOption...)}
+	 * and {@link Files#exists(Path, java.nio.file.LinkOption...)}.
+	 */
 	public static boolean fileNotExistsAndIsWritable(Path filePath) {
 		// Determine whether the given path is valid and if the file is writable.
 		if (!Files.notExists(filePath) && !Files.exists(filePath)) {

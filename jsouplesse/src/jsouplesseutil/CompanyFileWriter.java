@@ -1,4 +1,4 @@
-package jsouplesse.dataaccess.processing;
+package jsouplesseutil;
 
 import java.io.BufferedWriter;
 import java.io.IOException;
@@ -10,8 +10,6 @@ import java.util.List;
 
 import jsouplesse.AbstractScanner;
 import jsouplesse.dataaccess.dao.Company;
-import jsouplesseutil.IOUtils;
-import jsouplesseutil.WebStringUtils;
 
 public class CompanyFileWriter {
 
@@ -53,7 +51,7 @@ public class CompanyFileWriter {
 			return false;
 		}
 		
-		if (shouldConvertToCsv  
+		if (shouldConvertToCsv
 				&& !IOUtils.convertResultFileToCsv(filePath.toString())) {
 			// Creating the CSV file failed. Set result message and return false.
 			resultMessage = "Failed while converting results to CSV.";

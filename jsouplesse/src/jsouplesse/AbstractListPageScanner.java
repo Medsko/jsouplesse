@@ -12,6 +12,7 @@ import jsouplesse.dataaccess.processing.FailedScanBuilder;
 /**
  * Scans a web page containing a list of items (e.g. web shops).
  */
+@Deprecated
 public abstract class AbstractListPageScanner {
 	
 	protected SqlHelper sqlHelper;

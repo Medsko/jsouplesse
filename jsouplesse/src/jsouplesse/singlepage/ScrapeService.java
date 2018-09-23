@@ -7,8 +7,9 @@ import jsouplesse.RequestTimer;
 import jsouplesse.dataaccess.SqlHelper;
 import jsouplesse.dataaccess.dao.WebPage;
 import jsouplesse.dataaccess.dao.WebSite;
-import jsouplesse.dataaccess.processing.CompanyFileWriter;
 import jsouplesse.dataaccess.processing.WebSiteSaveBuffer;
+import jsouplesseutil.CompanyFileWriter;
+import jsouplesseutil.CrappyLogger;
 import jsouplesseutil.WebStringUtils;
 import javafx.scene.control.Alert;
 
@@ -24,12 +25,15 @@ public class ScrapeService {
 
 	private SqlHelper sqlHelper;
 	
+	private CrappyLogger logger;
+	
 	private CustomScraper scraper;
 	
 	private Alert alert;
 	
-	public ScrapeService(SqlHelper sqlHelper) {
+	public ScrapeService(SqlHelper sqlHelper, CrappyLogger logger) {
 		this.sqlHelper = sqlHelper;
+		this.logger = logger;
 	}
 	
 	/**
@@ -139,7 +143,7 @@ public class ScrapeService {
 			
 		} catch (SQLException e) {
 			String errorMessage = saveBuffer.getResultMessage();
-			System.out.println(errorMessage);
+			logger.log(errorMessage);
 			e.printStackTrace();
 			buildErrorAlert("Database fail!", errorMessage);
 		}

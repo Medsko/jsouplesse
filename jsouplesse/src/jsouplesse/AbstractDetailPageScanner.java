@@ -15,6 +15,7 @@ import jsouplesse.dataaccess.processing.WebPageInitializer;
  * that after calling it, {@link #getCompany()} can be used to retrieve the scraped
  * company data.
  */
+@Deprecated
 public abstract class AbstractDetailPageScanner {
 
 	// Input
