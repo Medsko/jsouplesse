@@ -63,4 +63,32 @@ public class IOUtils {
 		}
 		return true;
 	}
+	
+	/**
+	 * Determines whether the link is a relative link, and if so, attempts to reconstruct a 
+	 * direct URL.
+	 */
+	public static String determineDirectUrlFromRelative(String relativeUrl, String parentUrl) {
+		
+		if (relativeUrl.contains(parentUrl)) {
+			// The URL is relative. Strip away the base URL of the aggregate web site.
+			// Find the first slash after the base URL.
+			int index = relativeUrl.indexOf("/", parentUrl.length() - 1);
+			// Select everything to the right of the found slash. 
+			String directUrl = relativeUrl.substring(index + 1);
+			
+			int indexOfWWW = directUrl.indexOf("www.");
+			int indexOfHttp = directUrl.indexOf("http");
+
+			if (indexOfWWW == -1 && indexOfHttp == -1)
+				// Return the full relative URL to avoid out-of-bounds exception.
+				return relativeUrl;
+			else if (indexOfWWW != -1)
+				directUrl = directUrl.substring(indexOfWWW);
+			else
+				directUrl = directUrl.substring(indexOfHttp);
+		}
+		
+		return relativeUrl;
+	}
 }

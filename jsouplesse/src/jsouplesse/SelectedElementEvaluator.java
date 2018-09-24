@@ -5,6 +5,8 @@ import java.util.Optional;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
+import jsouplesseutil.IOUtils;
+
 /**
  * Evaluates an HTML element that has been selected by a {@link CustomScraper}
  * because it matched the selector based on the input provided by the user.
@@ -53,35 +55,8 @@ public class SelectedElementEvaluator {
 			}
 		}
 		// The selector selected an anchor tag directly. Process it.
-		rawWebShopUrl = determineDirectWebShopLink(rawWebShopUrl);
+		rawWebShopUrl = IOUtils.determineDirectUrlFromRelative(rawWebShopUrl, aggregateWebSiteUrl);
 		webShopUrl = Optional.of(rawWebShopUrl);
-		
-		return webShopUrl;
-	}
-	
-	/**
-	 * Determines whether the link to the web shop was a relative link, and if so,
-	 * attempts to reconstruct a direct URL.
-	 */
-	private String determineDirectWebShopLink(String webShopUrl) {
-		
-		// TODO: move this to IOUtils.
-		
-		if (webShopUrl.contains(aggregateWebSiteUrl)) {
-			// The URL is relative. Strip away the base URL of the aggregate web site.
-			// Find the first slash after the base URL.
-			int index = webShopUrl.indexOf("/", aggregateWebSiteUrl.length() - 1);
-			// Select everything to the right of the found slash. 
-			String tempWebShopUrl = webShopUrl.substring(index + 1);
-			
-			int startOfDirectUrl = tempWebShopUrl.indexOf("www.");
-			
-			if (startOfDirectUrl == -1)
-				// Return the full relative URL to avoid out-of-bounds exception.
-				return webShopUrl;
-			else
-				webShopUrl = tempWebShopUrl.substring(startOfDirectUrl);
-		}
 		
 		return webShopUrl;
 	}
