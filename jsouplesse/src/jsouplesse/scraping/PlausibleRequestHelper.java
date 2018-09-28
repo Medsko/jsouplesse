@@ -1,4 +1,4 @@
-package jsouplesse;
+package jsouplesse.scraping;
 
 import java.io.IOException;
 

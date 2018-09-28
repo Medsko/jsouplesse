@@ -10,7 +10,7 @@ import java.sql.Types;
 import java.util.HashMap;
 import java.util.Map;
 
-import jsouplesseutil.DBUtils;
+import jsouplesse.util.DBUtils;
 
 /**
  * Helper class that can be used by any DAO to delegate creating and 

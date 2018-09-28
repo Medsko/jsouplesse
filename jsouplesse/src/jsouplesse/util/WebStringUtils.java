@@ -1,10 +1,12 @@
-package jsouplesseutil;
+package jsouplesse.util;
 
 import java.util.Optional;
 import java.util.regex.Pattern;
 
 public class WebStringUtils {
 
+	public final static String PATH_TO_APP_FILE_DIRECTORY = "C:/jsouplesse";
+	
 	/** Regular expression for a URL. */
 	public final static String INCLUSIVE_URL_REGEX = "(http[s]?://)?(www\\.)?([a-zA-Z\\d\\-]+\\.)*([a-zA-Z\\d\\-]+/)*([a-zA-Z\\d\\-]+/?)";
 	
@@ -51,6 +53,60 @@ public class WebStringUtils {
 			return url;
 	}
 	
+	/**
+	 * Attempts to extract the external link from the given page URL that was found on
+	 * the web site represented by the parent URL.
+	 * 
+	 * @return and {@link Optional} containing the absolute external link, or an empty 
+	 * {@link Optional} if no viable external link could be determined.
+	 */
+	public static Optional<String> extractExternalLink(String pageUrl, String parentUrl) {
+		
+		Optional<String> externalLink = Optional.empty();
+		
+		String parentBase = determineBaseUrl(parentUrl);
+		
+		if (!pageUrl.contains(parentBase)) {
+			return externalLink;
+		}
+		
+		int indexOfRelativity = pageUrl.indexOf(parentBase) + parentBase.length();
+		
+		String relativeUrl = pageUrl.substring(indexOfRelativity);
+		
+		for (;;) {
+			// Strip away the path parts until encountering 'www.' or 'http'.
+			int indexPathEntry = relativeUrl.indexOf("/");
+			
+			if (indexPathEntry == -1) {
+				// No more path parts could be found, meaning no viable URL
+				// could be determined. Break and return false.
+				break;
+			}
+			
+			relativeUrl = relativeUrl.substring(indexPathEntry + 1);
+			
+			if (relativeUrl.startsWith("www") || relativeUrl.startsWith("http")) {
+				externalLink = Optional.of(determineBaseUrl(relativeUrl));
+				break;
+			}
+		}
+		
+		return externalLink;
+	}
+	
+	/**
+	 * Resolves the given URL against the URL of the parent page.
+	 * If the page URL is not relative, it is returned without modifications.
+	 * @param pageUrl - the possibly relative URL.
+	 * @param parentUrl - the URL of the page the URL was found on.
+	 */
+	public static String resolveAgainstParent(String pageUrl, String parentUrl) {
+		if (pageUrl.startsWith("/"))
+			pageUrl = parentUrl + pageUrl;
+		return pageUrl;
+	}
+	
 	public static String formatPhoneNumber(String phoneNumber) {
 		// Remove all whitespace, plus signs and hyphens.
 		String formattedPhoneNumber = phoneNumber.replaceAll("[\\+\\s-]", "");
@@ -74,9 +130,11 @@ public class WebStringUtils {
 	public static String determineWebSiteNameFromUrl(String url) {
 		
 		if (url.startsWith("http"))
+			// Remove everything left of the first slash.
 			url = url.substring(url.indexOf("/"));
 		
 		if (url.contains("www."))
+			// Remove the "www." part.
 			url = url.substring(url.indexOf(".") + 1);
 		
 		int index = url.indexOf(".");

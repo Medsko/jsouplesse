@@ -14,8 +14,8 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 
-import jsouplesseutil.DBUtils;
-import jsouplesseutil.IOUtils;
+import jsouplesse.util.DBUtils;
+import jsouplesse.util.IOUtils;
 
 /**
  * Creates and manages the connection to the database. If the application is run for the

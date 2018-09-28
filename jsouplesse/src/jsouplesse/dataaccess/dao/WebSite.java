@@ -7,7 +7,7 @@ import java.util.List;
 
 import jsouplesse.dataaccess.SqlHelper;
 import jsouplesse.dataaccess.SuperDao;
-import jsouplesseutil.FormatUtils;
+import jsouplesse.util.FormatUtils;
 
 /**
  * Represents a web site to which requests are being made. 

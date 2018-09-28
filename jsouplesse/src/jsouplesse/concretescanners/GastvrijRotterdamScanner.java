@@ -4,12 +4,12 @@ import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
-import jsouplesse.AbstractScanner;
-import jsouplesse.RequestTimer;
 import jsouplesse.dataaccess.dao.Company;
 import jsouplesse.dataaccess.dao.WebPage;
 import jsouplesse.dataaccess.dao.WebSite;
-import jsouplesseutil.WebStringUtils;
+import jsouplesse.scraping.AbstractScanner;
+import jsouplesse.scraping.RequestTimer;
+import jsouplesse.util.WebStringUtils;
 
 public class GastvrijRotterdamScanner extends AbstractScanner {
 

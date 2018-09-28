@@ -1,4 +1,4 @@
-package jsouplesse.dataaccess.processing;
+package jsouplesse;
 
 import jsouplesse.dataaccess.SqlHelper;
 import jsouplesse.dataaccess.dao.FailedScan;

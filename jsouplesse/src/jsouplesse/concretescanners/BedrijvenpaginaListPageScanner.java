@@ -4,22 +4,21 @@ import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
-import jsouplesse.AbstractListPageScanner;
 import jsouplesse.dataaccess.SqlHelper;
 import jsouplesse.dataaccess.dao.WebPage;
 
-public class BedrijvenpaginaListPageScanner extends AbstractListPageScanner {
+// Only kept for reference.
+@Deprecated
+public class BedrijvenpaginaListPageScanner {
 
 	public BedrijvenpaginaListPageScanner(SqlHelper sqlHelper, WebPage listPage) {
-		super(sqlHelper, listPage);
 	}
 
-	@Override
+
 	protected void scanRawHtml(String rawHtml) {
 		// Should never happen for this web site (famous last words).
 	}
 
-	@Override
 	protected void scanHtmlDocument(Document html) {
 		// Select all div's with class="bedrijf"
 		Elements companyCards = html.select(".bedrijf");
@@ -33,10 +32,6 @@ public class BedrijvenpaginaListPageScanner extends AbstractListPageScanner {
 			String webShopName = link.text();
 			// Now retrieve the absolute link to the detail page.
 			String detailPageUrl = link.attr("abs:href");
-			// Create a new WebPage using the resulting URL and add it to the list.
-			WebPage detailPage = new WebPage(sqlHelper, detailPageUrl);
-			detailPage.setWebShopName(webShopName);
-			detailPages.add(detailPage);
 		}
 	}
 }

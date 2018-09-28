@@ -1,4 +1,4 @@
-package jsouplesse;
+package jsouplesse.scraping;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -6,12 +6,11 @@ import java.util.List;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 
+import jsouplesse.FailedScanBuilder;
 import jsouplesse.dataaccess.dao.Company;
 import jsouplesse.dataaccess.dao.FailedScan;
 import jsouplesse.dataaccess.dao.WebPage;
 import jsouplesse.dataaccess.dao.WebSite;
-import jsouplesse.dataaccess.processing.FailedScanBuilder;
-import jsouplesse.dataaccess.processing.WebPageInitializer;
 
 /**
  * This class can be used to scan a list page for links to detail pages, which
@@ -61,14 +60,6 @@ public abstract class AbstractScanner implements Runnable {
 			System.out.println("Failed to load the web page: " + webPage.getPageUrl());
 			return;
 		}
-
-		// Wait until it is time to make the next request.
-		while (!timer.isRightTime())
-			try {
-				Thread.sleep(1000);
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-			}
 		
 		if (webPage.getPageContents() != null
 				&& !scanHtml(webPage.getPageContents())) {
@@ -81,7 +72,7 @@ public abstract class AbstractScanner implements Runnable {
 			failBuilder.buildFailedScan(webPage, FailedScan.Reason.CONTENT_NOT_RETRIEVED);
 		}
 	}
-	
+		
 	// TODO: to allow for more informative (success) logging, these next two methods should be made
 	// TODO: concrete, with some logging logic built around new abstract methods that subs implement (selectElements(), processElements())
 	

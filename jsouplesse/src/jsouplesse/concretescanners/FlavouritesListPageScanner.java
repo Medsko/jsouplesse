@@ -4,21 +4,19 @@ import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
-import jsouplesse.AbstractListPageScanner;
 import jsouplesse.dataaccess.SqlHelper;
-import jsouplesse.dataaccess.dao.FailedScan;
 import jsouplesse.dataaccess.dao.WebPage;
-import jsouplesseutil.WebStringUtils;
 
 /**
- * Scans a list page of flavourites.nl. 
+ * Scans a list page of flavourites.nl.
+ * Deprecated: only exists for future reference, when scanning raw HTML is going to be implemented.
  */
-public class FlavouritesListPageScanner extends AbstractListPageScanner {
+@Deprecated
+public class FlavouritesListPageScanner {
 
-	private String mangledWebShopUrl;
-		
+	private WebPage listPage;
+	
 	public FlavouritesListPageScanner(SqlHelper sqlHelper, WebPage listPage) {
-		super(sqlHelper, listPage);
 	}
 	
 	protected void scanRawHtml(String rawHtml) {
@@ -34,11 +32,8 @@ public class FlavouritesListPageScanner extends AbstractListPageScanner {
 		rawHtml = rawHtml.substring(startOfMangledUrl);
 		// Extract the mangled URL, which should end at the next double quote.
 		String mangledWebShopUrl = rawHtml.substring(0, rawHtml.indexOf('"'));
-		// Determine the actual web shop home page URL.
-		String webShopUrl = deduceOriginalUrl(mangledWebShopUrl);
+		
 		// Create a new WebPage using the resulting URL and add it to the list.
-		WebPage webShopHomePage = new WebPage(sqlHelper, webShopUrl);
-		detailPages.add(webShopHomePage);
 		// Repeat the process until the last mangled URL has been found.
 		scanRawHtml(rawHtml);
 	}
@@ -52,54 +47,7 @@ public class FlavouritesListPageScanner extends AbstractListPageScanner {
 			// Check whether the link text contains 'Bezoek shop' (or matches it, ignoring whitespace).
 			if (link.text().matches("Bezoek shop")) {
 				// This is a possible relative link to the actual web site of the web shop.
-				String webShopUrl = deduceOriginalUrl(link.attr("href"));
-				
-				if (webShopUrl == null)
-					continue;
-
-				// Use the resulting URL to create a new WebPage and add it to the list.
-				WebPage webShopHomePage = new WebPage(sqlHelper, webShopUrl);
-				detailPages.add(webShopHomePage);
 			}
 		}
-	}
-	
-	/** Reconstructs the original URL that leads to the home page of a web shop. */
-	private String deduceOriginalUrl(String mangledWebShopUrl) {
-		// The direct URL can be reconstructed from this by replacing the underscore by a period
-		// and prefixing "http://www.".
-		String originalUrl = mangledWebShopUrl.replaceAll("_", "\\.");
-		originalUrl = "http://www." + originalUrl;
-		
-		if (!originalUrl.matches(WebStringUtils.URL_IN_TEXT_REGEX)) {
-			// The URL is not yet a valid one. Try to fix it.
-			String[] urlParts = originalUrl.split("-");
-			originalUrl = urlParts[0];
-			
-			outer:
-			for (int i=1; i<urlParts.length; i++) {
-				
-				for (String countryCode : WebStringUtils.SUPPORTED_COUNTRY_CODES) {
-					
-					if (urlParts[i].equals(countryCode)) {
-						originalUrl += "." + urlParts[i];
-						break outer;
-					}
-				}
-			}
-		}
-		
-		if (!originalUrl.matches(WebStringUtils.URL_IN_TEXT_REGEX)) {
-			// The URL still doesn't appear to be viable. Build a report and return null.
-			WebPage failedShopHomePage = new WebPage(sqlHelper, mangledWebShopUrl);
-			failBuilder.buildFailedScan(failedShopHomePage, FailedScan.Reason.INVALID_URL);
-			return null;
-		}
-		
-		return originalUrl;
-	}
-	
-	public String getMangledWebShopUrl() {
-		return mangledWebShopUrl;
-	}
+	}	
 }

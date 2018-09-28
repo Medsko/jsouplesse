@@ -1,4 +1,4 @@
-package jsouplesse.dataaccess.processing;
+package jsouplesse.dataaccess;
 
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -6,7 +6,6 @@ import java.util.List;
 
 import org.sqlite.SQLiteException;
 
-import jsouplesse.dataaccess.SqlHelper;
 import jsouplesse.dataaccess.dao.FailedScan;
 import jsouplesse.dataaccess.dao.WebPage;
 import jsouplesse.dataaccess.dao.WebSite;

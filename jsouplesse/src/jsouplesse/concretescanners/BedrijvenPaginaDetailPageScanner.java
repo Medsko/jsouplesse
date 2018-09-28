@@ -3,26 +3,22 @@ package jsouplesse.concretescanners;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 
-import jsouplesse.AbstractDetailPageScanner;
 import jsouplesse.dataaccess.SqlHelper;
 import jsouplesse.dataaccess.dao.Company;
 import jsouplesse.dataaccess.dao.WebPage;
 
 /**
  * Scans the detail page of a web shop.
+ * Deprecated, but kept for future reference.
  */
-public class BedrijvenPaginaDetailPageScanner extends AbstractDetailPageScanner {
+@Deprecated
+public class BedrijvenPaginaDetailPageScanner {
+	
+	private WebPage detailPage;
 	
 	public BedrijvenPaginaDetailPageScanner(SqlHelper sqlHelper, WebPage detailPage) {
-		super(sqlHelper, detailPage);
 	}
 
-	@Override
-	protected void scanRawHtml(String rawHtml) {
-		// Should not happen for this web page.		
-	}
-
-	@Override
 	protected void scanHtml(Document html) {
 		// Get the div with class="box bedrijf".
 		Element bedrijfBox = detailPage.getPageContents().selectFirst(".box.bedrijf");
@@ -48,5 +44,9 @@ public class BedrijvenPaginaDetailPageScanner extends AbstractDetailPageScanner 
 		company.setMobileNumber(mobileNumber);
 		company.setHomePageUrl(webShopLink);
 		company.addEmailAddress(emailAddress);
+	}
+	
+	private String nullSafeGetText(Element element) {
+		return "";
 	}
 }

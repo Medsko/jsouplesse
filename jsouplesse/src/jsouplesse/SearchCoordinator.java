@@ -12,12 +12,14 @@ import java.util.List;
 import jsouplesse.concretescanners.ScannerFactory;
 import jsouplesse.dataaccess.Connector;
 import jsouplesse.dataaccess.SqlHelper;
+import jsouplesse.dataaccess.WebSiteSaveBuffer;
 import jsouplesse.dataaccess.dao.Company;
 import jsouplesse.dataaccess.dao.WebPage;
 import jsouplesse.dataaccess.dao.WebSite;
-import jsouplesse.dataaccess.processing.WebSiteSaveBuffer;
-import jsouplesseutil.IOUtils;
-import jsouplesseutil.WebStringUtils;
+import jsouplesse.scraping.AbstractScanner;
+import jsouplesse.scraping.RequestTimer;
+import jsouplesse.util.IOUtils;
+import jsouplesse.util.WebStringUtils;
 
 /**
  * Think of this baby as an executor, that fires off a new scanner for each

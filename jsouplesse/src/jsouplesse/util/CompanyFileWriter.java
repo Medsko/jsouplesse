@@ -1,4 +1,4 @@
-package jsouplesseutil;
+package jsouplesse.util;
 
 import java.io.BufferedWriter;
 import java.io.IOException;
@@ -8,8 +8,9 @@ import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.List;
 
-import jsouplesse.AbstractScanner;
 import jsouplesse.dataaccess.dao.Company;
+import jsouplesse.scraping.AbstractScanner;
+import jsouplesse.scraping.ElementEvaluator;
 
 public class CompanyFileWriter {
 
@@ -26,14 +27,24 @@ public class CompanyFileWriter {
 	 * 
 	 * @param scanner - the {@link AbstractScanner} of which the results should be saved.
 	 */
-	public boolean saveResults(AbstractScanner scanner, boolean shouldConvertToCsv) {
+	public boolean saveResults(ElementEvaluator scraper, boolean shouldConvertToCsv) {
 		// Get the data objects from the scanner.
-		List<Company> companies = scanner.getCompanies();
+		List<Company> companies = scraper.getCompanies();
 		// Determine the name of the file to which the results will be written.
 		fileName = "webshopsOn" 
-				+ WebStringUtils.capitalize(scanner.getWebSite().getName()) + ".txt";
+				+ WebStringUtils.capitalize(scraper.getWebSiteName()) + ".txt";
 		
-		Path filePath = Paths.get("C:", "Temp", fileName);
+		Path outputDirectory = Paths.get("C:", "jsouplesse", "companyData");
+		
+		try {
+			if (IOUtils.fileNotExistsAndIsWritable(outputDirectory)) {
+				Files.createDirectories(outputDirectory);
+			}
+		} catch (IOException ioex) {
+			ioex.printStackTrace();
+		}
+		
+		Path filePath = outputDirectory.resolve(fileName);
 		
 		// Use a writer with append = true, so previous results will not be overwritten.
 		try (BufferedWriter writer = Files.newBufferedWriter(filePath, 

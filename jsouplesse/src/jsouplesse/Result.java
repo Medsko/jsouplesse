@@ -9,6 +9,17 @@ public class Result {
 	
 	private String message;
 	
+	public Result() {}
+	
+	public Result(String message) {
+		this.message = message;
+	}
+	
+	public Result(String message, String title) {
+		this.message = message;
+		this.title = title;
+	}
+	
 	public String getTitle() {
 		return title;
 	}

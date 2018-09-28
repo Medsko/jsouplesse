@@ -1,4 +1,4 @@
-package jsouplesse.dataaccess.processing;
+package jsouplesse.scraping;
 
 import java.io.IOException;
 
@@ -6,10 +6,11 @@ import org.jsoup.Connection.Response;
 import org.jsoup.HttpStatusException;
 import org.jsoup.nodes.Document;
 
-import jsouplesse.PlausibleRequestHelper;
+import jsouplesse.FailedScanBuilder;
 import jsouplesse.dataaccess.dao.FailedScan;
 import jsouplesse.dataaccess.dao.WebPage;
-import jsouplesseutil.WebStringUtils;
+import jsouplesse.util.CrappyLogger;
+import jsouplesse.util.WebStringUtils;
 
 /**
  * Helper class that creates a new WebPage object by creating and sending a human-like
@@ -17,6 +18,13 @@ import jsouplesseutil.WebStringUtils;
  */
 public class WebPageInitializer {
 
+	// TODO: This class should be reworked into a WebPageFetcher, which should determine whether the web page is on a web site that was queried earlier
+	// TODO: and if so, directly use a RequestTimer (possibly one per web site queried) to determine whether enough time passed since the last request.
+	// TODO: Hurry up with refactoring this class, as the bullshit it causes is getting ridiculous. 
+	
+	/** Used to log errors. */
+	private CrappyLogger logger;
+	
 	/** The web page being retrieved. */
 	private WebPage webPage;
 	
@@ -25,6 +33,8 @@ public class WebPageInitializer {
 
 	/** Used to build a report when a web page can't be scanned. */
 	private FailedScanBuilder failBuilder;
+	
+	private String parentUrl;
 	
 	/** 
 	 * Flag signifying if the scanner should proceed to scanning the next page on the web site,
@@ -40,6 +50,10 @@ public class WebPageInitializer {
 	
 	public WebPageInitializer() {}
 	
+	public WebPageInitializer(CrappyLogger logger) {
+		this.logger = logger;
+	}
+	
 	public WebPageInitializer(FailedScanBuilder failBuilder) {
 		this.failBuilder = failBuilder;
 	}
@@ -48,7 +62,7 @@ public class WebPageInitializer {
 	 * Initializes the given web page, by sending a request and parsing the response.
 	 * If no connection could be created, or no response retrieved, or the contents could
 	 * not be parsed, null is returned instead.
-	 * @return the resulting web page object, or null if something went wrong.
+	 * @return flag indicating success.
 	 */
 	public boolean initializeWebPage(WebPage webPage) {
 		
@@ -56,9 +70,16 @@ public class WebPageInitializer {
 		if (webPage.getWebPageTypeId() == null && webPageTypeId == null)
 			throw new UnsupportedOperationException("The web page type has not been set!");
 		
+		String pageUrl = webPage.getPageUrl();
+		
 		if (webPage.getPageUrl() == null)
 			// If no URL is provided, no web page can be constructed.
 			return false;
+		
+		// Resolve the pageUrl against its parent, if it is relative.
+		pageUrl = WebStringUtils.resolveAgainstParent(pageUrl, parentUrl);
+		
+		webPage.setPageUrl(pageUrl);
 		
 		Response response = null;
 		Document pageContents = null;
@@ -66,7 +87,7 @@ public class WebPageInitializer {
 		
 		try {
 			// Use the helper to construct a human-like request.
-			response = hermes.sendRequest(webPage.getPageUrl());
+			response = hermes.sendRequest(pageUrl);
 			
 			if (hermes.getCanParseResponse())
 				// Parse the results and set the resulting HTML document on the list page.
@@ -80,6 +101,8 @@ public class WebPageInitializer {
 			if (hsex.getStatusCode() == 403)
 				// If we've been blocked, further scanning is pointless...for now.
 				shouldResumeScanning = false;
+			
+			handleError("WebPageInitializer got a 'Forbidden' code response!");
 			
 			handleException(FailedScan.Reason.HTTP_STATUS_403, hsex);			
 			hsex.printStackTrace();
@@ -97,15 +120,23 @@ public class WebPageInitializer {
 			webPage.setWebPageTypeId(webPageTypeId);
 		
 		if (webPage.haveContentsBeenRetrieved()) {
-			System.out.println("WebPageInitializer has successfully retrieved the contents for "
-					+ "page " + webPage.getPageUrl());
+			handleError("WebPageInitializer has successfully retrieved the contents for "
+					+ "page " + pageUrl);
 			return true;
 		} else {
-			System.out.println("WebPageInitializer failed to retrieve contents for "
-					+ "page " + webPage.getPageUrl());
+			handleError("WebPageInitializer failed to retrieve contents for "
+					+ "page " + pageUrl);
 			return false;
 		}
-		
+	}
+	
+	/**
+	 * Temporary (we all know that means nothing) convenience method that avoids
+	 * null pointers when logging. 
+	 */
+	private void handleError(String message) {
+		if (logger != null)
+			logger.log(message);
 	}
 	
 	/** Constructs a FailedScan using the thrown exception. */
@@ -122,7 +153,11 @@ public class WebPageInitializer {
 					+ " is not yet using WebPageInitializer(FailedScanBuilder).");
 		}
 	}
-		
+
+	public void setParentUrl(String parentUrl) {
+		this.parentUrl = parentUrl;
+	}
+
 	public void setWebPageTypeId(Integer webPageTypeId) {
 		this.webPageTypeId = webPageTypeId;
 	}

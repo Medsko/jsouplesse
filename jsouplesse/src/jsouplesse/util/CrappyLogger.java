@@ -1,4 +1,4 @@
-package jsouplesseutil;
+package jsouplesse.util;
 
 import java.io.BufferedWriter;
 import java.io.IOException;
@@ -31,6 +31,7 @@ public class CrappyLogger {
 			try {
 				initialize();
 			} catch (IOException ioex) {
+				ioex.printStackTrace();
 				// Too bad...no logs for this user.
 			}
 		}
@@ -71,6 +72,7 @@ public class CrappyLogger {
 				writer.close();
 			} catch (IOException ioex) {
 				// Too bad...
+				ioex.printStackTrace();
 			}
 		}
 	}
@@ -87,8 +89,9 @@ public class CrappyLogger {
 				// Try to write the message to the log file.
 				writer.write(message);
 				writer.newLine();
-			} catch (IOException e) {
+			} catch (IOException ioex) {
 				// Too bad...no logs for this user.
+				ioex.printStackTrace();
 			}
 		}
 	}

@@ -10,29 +10,26 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 
-import jsouplesse.concretescanners.ScannerFactory;
 import jsouplesse.dataaccess.SqlHelper;
+import jsouplesse.dataaccess.WebSiteSaveBuffer;
 import jsouplesse.dataaccess.dao.Company;
 import jsouplesse.dataaccess.dao.WebPage;
 import jsouplesse.dataaccess.dao.WebSite;
-import jsouplesse.dataaccess.processing.FailedScanBuilder;
-import jsouplesse.dataaccess.processing.WebPageInitializer;
-import jsouplesse.dataaccess.processing.WebSiteSaveBuffer;
-import jsouplesseutil.WebStringUtils;
+import jsouplesse.scraping.WebPageInitializer;
+import jsouplesse.util.WebStringUtils;
 
 /**
  * Scans an entire web site for company data.
+ * 
+ * Deprecated, and doesn't actually do anything anymore.
  */
+@Deprecated
 public abstract class AbstractWebSiteScanner implements Runnable {
 
 	// Processing
 	protected SqlHelper sqlHelper;
 	
 	protected WebSite webSite;
-	
-	protected AbstractListPageScanner listPageScanner;
-	
-	protected AbstractDetailPageScanner detailPageScanner;
 	
 	protected WebPageInitializer webPageContentsHelper = new WebPageInitializer();
 	
@@ -114,18 +111,6 @@ public abstract class AbstractWebSiteScanner implements Runnable {
 					// The web site blocked us. Admit defeat - for now.
 					return false;
 			}
-			// The web page was successfully parsed. Set the tsLastRequest.
-			webSite.setTsLastRequest(Calendar.getInstance());
-			
-			// Initialize a new ListPageScanner for the particular web site.
-			listPageScanner = ScannerFactory.createListPageScanner(sqlHelper, webSite.getName(), listPage);
-			listPageScanner.setFailBuilder(failBuilder);
-
-			// Scan the list page contents for detail pages.
-			listPageScanner.scanForDetailPages();
-			
-			// Everything went smoothly. Add the results to the list.
-			webSite.getDetailPages().addAll(listPageScanner.getDetailPages());
 		}
 		return true;
 	}
@@ -165,17 +150,6 @@ public abstract class AbstractWebSiteScanner implements Runnable {
 					// The web site blocked us. Admit defeat - for now.
 					return false;
 			}
-			// The web page was successfully parsed. Set the tsLastRequest.
-			webSite.setTsLastRequest(Calendar.getInstance());
-						
-			// Initialize a new DetailPageScanner for the particular web site.
-			detailPageScanner = ScannerFactory.createDetailPageScanner(sqlHelper, webSite.getName(), detailPage);
-			
-			// Scan the page and add the resulting company data to the list.
-			detailPageScanner.scanDetailPage();
-			
-			if (detailPageScanner.getCompany() != null)
-				companyList.add(detailPageScanner.getCompany());
 		}
 		return true;
 	}

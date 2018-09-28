@@ -1,5 +1,9 @@
 package jsouplesse.gui;
 
+import java.util.ArrayList;
+import java.util.Deque;
+import java.util.LinkedList;
+
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.geometry.HPos;
@@ -17,9 +21,8 @@ import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import jsouplesse.dataaccess.Connector;
 import jsouplesse.dataaccess.SqlHelper;
-import jsouplesse.singlepage.ScrapeService;
-import jsouplesse.singlepage.ScraperInput;
-import jsouplesseutil.CrappyLogger;
+import jsouplesse.scraping.ScrapeService;
+import jsouplesse.util.CrappyLogger;
 
 public class MainScreenBuilder {
 	
@@ -30,17 +33,32 @@ public class MainScreenBuilder {
 	private SqlHelper sqlHelper;
 	
 	private CrappyLogger logger;
+		
+	private ScrapeService service;
+
+	// Builders.
+	/** Builds standard format buttons. */
+	private ButtonBuilder buttonBuilder = new ButtonBuilder();
+	
+	/** Capable of building an entire new input section in one go. */
+	private InputSectionBuilder inputSectionBuilder = new InputSectionBuilder();
+	
+	// Concrete screen elements.
 	
 	private TextField inputPageUrl;
 	
-	private TextField inputTagName;
+	private Button scrapeButton;
 	
-	private TextField inputAttribute;
+	private Button addInputSectionButton;
 	
-	private ScrapeService service;
+	private Button removeInputSectionButton;
+	
+	private Deque<InputSection> inputSections = new LinkedList<>();
+	
+	private int rowIndexButtons = 2;
+	
 	
 	public MainScreenBuilder(Connector connector, CrappyLogger logger) {
-//		this.connector = connector;
 		sqlHelper = new SqlHelper(connector);
 		this.logger = logger;
 	}
@@ -63,29 +81,31 @@ public class MainScreenBuilder {
 		GridPane.setHalignment(header, HPos.CENTER);
 		GridPane.setMargin(header, new Insets(20, 0, 20, 0));
 
-
 		// Define some column constraints.
 		// Min-width 100, preferred-width 100 and max-width Double.MAX_VALUE.
 		ColumnConstraints columnOneConstraints = new ColumnConstraints(100, 100, Double.MAX_VALUE);
 		columnOneConstraints.setHalignment(HPos.RIGHT);
 		
-		ColumnConstraints columnTwoConstraints = new ColumnConstraints(200, 200, Double.MAX_VALUE);
-		// Makes the column grow horizontally when the window size is expanded.
+		ColumnConstraints columnTwoConstraints = new ColumnConstraints(100, 100, Double.MAX_VALUE);
 		columnTwoConstraints.setHgrow(Priority.ALWAYS);
-		columnTwoConstraints.setPercentWidth(75);
+		columnTwoConstraints.setHalignment(HPos.RIGHT);
 		
-		mainScreen.getColumnConstraints().addAll(columnOneConstraints, columnTwoConstraints);
+		ColumnConstraints columnThreeConstraints = new ColumnConstraints(100, 100, Double.MAX_VALUE);
+		columnThreeConstraints.setHgrow(Priority.ALWAYS);
+		columnThreeConstraints.setHalignment(HPos.RIGHT);
+		
+		mainScreen.getColumnConstraints().addAll(columnOneConstraints, columnTwoConstraints, columnThreeConstraints);
 
 		service = new ScrapeService(sqlHelper, logger);
 		
-		addInputFields(mainScreen);
-		
-		addScrapeButton(mainScreen);
+		addButtons();
+
+		addInitialInputFields();		
 		
 		return mainScreen;
 	}
 	
-	private void addInputFields(GridPane mainScreen) {
+	private void addInitialInputFields() {
 		// Add a label for input field 'page URL'.
 		Label inputPageUrlLabel = new Label("Page url: ");
 		mainScreen.add(inputPageUrlLabel, 0, 1);
@@ -97,80 +117,106 @@ public class MainScreenBuilder {
 		inputPageUrl.setTooltip(pageUrlTooltip);
 		mainScreen.add(inputPageUrl, 1, 1);
 		
-		// Add a label for input field 'tag'.
-		Label inputTagNameLabel = new Label("Tag: ");
-		mainScreen.add(inputTagNameLabel, 0, 2);
-		// Add input field for 'tag'.
-		inputTagName = new TextField();
-		inputTagName.setPrefHeight(40);
-		// Add a tool tip for the tag input field.
-		Tooltip tagTooltip = new Tooltip("The tag you want to search for web shop url's. This can "
-				+ "also be a tag that contains the url, for instance: 'div' (input without quotes).");
-		inputTagName.setTooltip(tagTooltip);
-		mainScreen.add(inputTagName, 1, 2);
-
-		// Add a label for input field attribute.
-		Label inputAttributeLabel = new Label("Attribute:");
-		mainScreen.add(inputAttributeLabel, 0, 3);
-		// Add input field for attribute.
-		inputAttribute = new TextField();
-		inputAttribute.setPrefHeight(40);
-		// Add a tool tip for the attribute input field.
-		Tooltip attributeTooltip = new Tooltip("An attribute of the tag you want to scan for. "
-				+ "For instance: class=\"web_shop\" (include quotes in input) or 'href' (without quotes).");
-		inputAttribute.setTooltip(attributeTooltip);
-		mainScreen.add(inputAttribute, 1, 3);
+		addDynamicInputFields();
 	}
 	
-	private void addScrapeButton(GridPane mainScreen) {
+	private void addDynamicInputFields() {
+		inputSections.offer(inputSectionBuilder.buildInputSectionForSelector(mainScreen, inputSections.size() + 1));
+		rowIndexButtons += 2;
+		GridPane.setRowIndex(scrapeButton, rowIndexButtons);
+		GridPane.setRowIndex(addInputSectionButton, rowIndexButtons);
+		GridPane.setRowIndex(removeInputSectionButton, rowIndexButtons);
+	}
+	
+	private void removeDynamicInputFields() {
+		// At least one input section should always be present.
+		if (inputSections.size() == 1)
+			return;
+		// Get the most recently added input section from the Deque.
+		InputSection inputSection = inputSections.pollLast();
+		// Remove the section from the screen.
+		inputSection.removeInputSectionFromScreen(mainScreen);
+		// Update the row index and use it to reposition the buttons.
+		rowIndexButtons -= 2;
+		GridPane.setRowIndex(scrapeButton, rowIndexButtons);
+		GridPane.setRowIndex(addInputSectionButton, rowIndexButtons);
+		GridPane.setRowIndex(removeInputSectionButton, rowIndexButtons);
+	}
+	
+	private void addButtons() {
 		// Add a button that starts the search.
-		Button scrapeButton = createScrapeButton();
-		mainScreen.add(scrapeButton, 1, 4);
+		scrapeButton = buttonBuilder.build("Scrape", createScrapeControl());
+		mainScreen.add(scrapeButton, 0, rowIndexButtons);
 		GridPane.setHalignment(scrapeButton, HPos.CENTER);
 		GridPane.setMargin(scrapeButton, new Insets(20, 0, 20, 0));
+		
+		addInputSectionButton = buttonBuilder.build("Add step", new EventHandler<ActionEvent>() {
+			@Override
+			public void handle(ActionEvent event) {
+				addDynamicInputFields();
+			}
+		});
+		mainScreen.add(addInputSectionButton, 1, rowIndexButtons);
+		GridPane.setHalignment(addInputSectionButton, HPos.CENTER);
+		GridPane.setMargin(addInputSectionButton, new Insets(20, 0, 20, 0));
+		
+		removeInputSectionButton = buttonBuilder.build("Remove step", new EventHandler<ActionEvent>() {
+			@Override
+			public void handle(ActionEvent event) {
+				removeDynamicInputFields();
+			}
+		});
+		mainScreen.add(removeInputSectionButton, 2, rowIndexButtons);
+		GridPane.setHalignment(removeInputSectionButton, HPos.CENTER);
+		GridPane.setMargin(removeInputSectionButton, new Insets(20, 0, 20, 0));
 	}
-	
+		
 	/**
 	 * Helper method to {@link #addScrapeButton(GridPane)}. Builds a 'scrape' button which
 	 * triggers a scan of the web page when clicked.
 	 */
-	private Button createScrapeButton() {
+	private EventHandler<ActionEvent> createScrapeControl() {
 		
-		Button searchButton = new Button("Scrape");
-		searchButton.setPrefHeight(50);
-		searchButton.setDefaultButton(true);
-		searchButton.setPrefWidth(175);
-		
-		searchButton.setOnAction(new EventHandler<ActionEvent>() {
+		return new EventHandler<ActionEvent>() {
 			
 			@Override
 			public void handle(ActionEvent event) {
-				// Check the input.
-				if (inputPageUrl.getText().isEmpty() 
-						|| (inputTagName.getText().isEmpty()
-							&& inputAttribute.getText().isEmpty())) {
+				// Check whether a value for page URL has been entered.		
+				if (inputPageUrl.getText().isEmpty()) {
 					showAlert(Alert.AlertType.ERROR, "Invalid input!", 
-							"Please enter at least a page url and either a tag or an attribute."
-							+ "to search for.");
+							"Please enter a valid page url.");
 					return;
 				}
+				// Create a list to hold the input.
+				ArrayList<ElementEvaluatorInput> completeInput = new ArrayList<>();
 				
-				ScraperInput input = new ScraperInput();
+				// Check whether all input section have been properly filled.
+				for (InputSection inputSection : inputSections) {
+					// Make sure the input is valid.
+					if (!inputSection.isValid()) {
+						showAlert(Alert.AlertType.ERROR, "Invalid input!", 
+								"Please enter at least a tag or attribute for each step.");
+						return;
+					}
+					ElementEvaluatorInput input = inputSection.getElementEvaluatorInput();
+					completeInput.add(input);
+				}
+				// Construct the input for the service.
+				SpiderInput spiderInput = new SpiderInput();
+				spiderInput.pageUrl = inputPageUrl.getText();
+				spiderInput.inputList = completeInput;
 				
-				input.pageUrl = inputPageUrl.getText();
-				input.tagName = inputTagName.getText();
-				input.attribute = inputAttribute.getText();
-				
-				service.scrape(input);
-				showAlertFromService();
+				// Let the service do its thing with the input.
+				if (!service.scrape(spiderInput)) {
+					showAlertFromService();
+					return;
+				}
 				
 				// For now, only write to file (not to database).
 				service.writeCompaniesToFile(service.getScraper(), true);
 				showAlertFromService();
 			}
-		});
-
-		return searchButton;
+		};
 	}
 	
 	/**

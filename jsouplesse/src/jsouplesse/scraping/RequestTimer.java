@@ -1,4 +1,4 @@
-package jsouplesse;
+package jsouplesse.scraping;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -6,6 +6,7 @@ import java.util.Random;
 import java.util.stream.LongStream;
 
 import jsouplesse.dataaccess.dao.WebSite;
+import jsouplesse.util.CrappyLogger;
 
 /**
  * This helper class keeps track of the time passed since the last request was made.
@@ -18,12 +19,25 @@ import jsouplesse.dataaccess.dao.WebSite;
  */
 public class RequestTimer {
 
+	protected CrappyLogger logger;
+	
 	protected Instant tsNextRequest;
 	
+	protected String webSiteBaseUrl;
+	
+	protected long randomInterval;
+	
+	// Use RequestTimer(CrappyLogger, String).
+	@Deprecated
 	public RequestTimer() {}
 	
-	// TODO: instead of waiting one second when isRightTime() returns false, the Thread could also sleep for randomInterval milliseconds....
+	public RequestTimer(CrappyLogger logger, String webSiteBaseUrl) {
+		this.logger = logger;
+		this.webSiteBaseUrl = webSiteBaseUrl;
+	}
 	
+	// TODO: instead of waiting one second when isRightTime() returns false, the Thread could also sleep for randomInterval milliseconds....
+		
 	/**
 	 * Determines whether a next request can be sent, without instantly coming across as
 	 * non-/in-/super-human. Checks the current time against {@link WebSite#getTsLastRequest()}.
@@ -46,16 +60,28 @@ public class RequestTimer {
 	/**
 	 * Updates the field tsNextRequest, by getting the current time and adding a
 	 * random number of milliseconds to it, making the interval between requests
-	 * vary between 3 and 11 seconds. 
+	 * vary between 3 and 11 seconds.
 	 */
 	public void updateTsNextRequest() {
 		// Create a random long stream.
 		LongStream randomLongs = new Random().longs(3000L, 11000L);
 		// Get the next random long from the stream.
-		long millis = randomLongs.findFirst().getAsLong();
+		randomInterval = randomLongs.findFirst().getAsLong();
 		// Log the result.
-		System.out.println("Random number of milliseconds: " + millis);
+//		logger.log("Random number of milliseconds: " + millis);
 		// Add it to the current time stamp as milliseconds and set as tsNextRequest.
-		tsNextRequest = Instant.now().plus(millis, ChronoUnit.MILLIS);
+		tsNextRequest = Instant.now().plus(randomInterval, ChronoUnit.MILLIS);
+	}
+	
+	public long getRandomInterval() {
+		return randomInterval;
+	}
+
+	public String getWebSiteBaseUrl() {
+		return webSiteBaseUrl;
+	}
+
+	public void setWebSiteBaseUrl(String webSiteBaseUrl) {
+		this.webSiteBaseUrl = webSiteBaseUrl;
 	}
 }

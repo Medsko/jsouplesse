@@ -1,4 +1,4 @@
-package jsouplesseutil;
+package jsouplesse.util;
 
 import java.sql.Connection;
 import java.sql.ResultSet;

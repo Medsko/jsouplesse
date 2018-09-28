@@ -1,16 +1,18 @@
-package jsouplesse.singlepage;
+package jsouplesse.scraping;
 
 import java.sql.SQLException;
+import java.util.List;
 
-import jsouplesse.AbstractScanner;
-import jsouplesse.RequestTimer;
+import jsouplesse.Result;
 import jsouplesse.dataaccess.SqlHelper;
+import jsouplesse.dataaccess.WebSiteSaveBuffer;
 import jsouplesse.dataaccess.dao.WebPage;
 import jsouplesse.dataaccess.dao.WebSite;
-import jsouplesse.dataaccess.processing.WebSiteSaveBuffer;
-import jsouplesseutil.CompanyFileWriter;
-import jsouplesseutil.CrappyLogger;
-import jsouplesseutil.WebStringUtils;
+import jsouplesse.gui.ElementEvaluatorInput;
+import jsouplesse.gui.SpiderInput;
+import jsouplesse.util.CompanyFileWriter;
+import jsouplesse.util.CrappyLogger;
+import jsouplesse.util.WebStringUtils;
 import javafx.scene.control.Alert;
 
 /**
@@ -27,7 +29,7 @@ public class ScrapeService {
 	
 	private CrappyLogger logger;
 	
-	private CustomScraper scraper;
+	private ElementEvaluator scraper;
 	
 	private Alert alert;
 	
@@ -41,18 +43,18 @@ public class ScrapeService {
 	 * based on the provide {@link ScraperInput}, scrapes the target page
 	 * for company data
 	 */
-	public boolean scrape(ScraperInput input) {
-		
-		String selector = constructSelector(input);
-		
-		String pageUrl = input.pageUrl;
-		
-		scraper = createScraper(pageUrl, selector);
+	public boolean scrape(SpiderInput spiderInput) {
+
+		// Use the builder to create an ElementSelector using the selector input.
+		ElementEvaluatorBuilder builder = new ElementEvaluatorBuilder(logger, sqlHelper);
+		scraper = builder.build(spiderInput.inputList, spiderInput.pageUrl);
 		
 		try {
-			
-			scraper.run();
-			
+			if (!scraper.evaluate(spiderInput.pageUrl)) {
+				// Error while scanning.
+				Result result = scraper.getResult();
+				buildErrorAlert(result.getTitle(), result.getMessage());
+			}
 		} catch (UnsupportedOperationException uoex) {
 			// The page could not be parsed as an HTML document.
 			String errorMessage = "Failed to parse the page as an html document.";
@@ -65,63 +67,26 @@ public class ScrapeService {
 		return true;
 	}
 	
-	private CustomScraper createScraper(String url, String selector) {
-		// Create the objects necessary to instantiate a scanner.
-		// First off, the request timer.
-		RequestTimer timer = new RequestTimer();
-		
-		// Create the web site.
-		String webSiteBaseUrl = WebStringUtils.determineBaseUrl(url);
-		WebSite webSite = new WebSite(sqlHelper, webSiteBaseUrl);
-		webSite.setName(WebStringUtils.determineWebSiteNameFromUrl(url));
-		
-		// Create the web page. Then, add it to the web site.
-		WebPage pageToScrape = new WebPage(sqlHelper, url);
-		pageToScrape.setWebPageTypeId(WebPage.TYPE_AGGREGATE);
-		webSite.getWebPages().add(pageToScrape);
-		
-		// Now create the scanner using with the freshly created parameters.
-		CustomScraper scraper = new CustomScraper(timer, webSite, pageToScrape);
-		// Set the custom made selector on the scraper.
-		scraper.setSelector(selector);
-		
-		return scraper;
-	}
-
-	/**
-	 * Constructs a (hopefully valid) selector from the input from the user.
-	 */
-	private String constructSelector(ScraperInput input) {
-		
-		String selector = "";
-		
-		if (input.tagName == null)
-			selector += "*";
-		else
-			selector += input.tagName;
-		
-		if (input.attribute != null) {
-			String attribute = input.attribute.replace("\"", "'");
-			selector += "[" + attribute + "]";
-		}
-		
-		return selector;
-	}
-	
 	/**
 	 * Writes the company data that was successfully scraped from the page to one or two files.
 	 * 
 	 * @param scanner - the scanner for which the results should be written to file.
 	 * @param shouldConvertToCsv - determines whether the results should also be written to CSV.
 	 */
-	public boolean writeCompaniesToFile(AbstractScanner scanner, boolean shouldConvertToCsv) {
+	public boolean writeCompaniesToFile(ElementEvaluator scraper, boolean shouldConvertToCsv) {
 		// Initialize the writer and pass the flag.
 		CompanyFileWriter writer = new CompanyFileWriter();
+		
+		if (scraper.getCompanies().size() == 0) {
+			buildErrorAlert("Result fail!", "The scan yielded no results! Are you sure you "
+					+ "entered all steps correctly?");
+			return false;
+		}
 
-		if (!writer.saveResults(scanner, shouldConvertToCsv)) {
+		if (!writer.saveResults(scraper, shouldConvertToCsv)) {
 			String errorMessage = writer.getResultMessage();
 			buildErrorAlert("File write fail!", errorMessage);
-			System.out.println(errorMessage);
+			logger.log(errorMessage);
 		}
 		// Everything went smoothly. Create a success alert and return true.
 		buildSuccessAlert("Write success!", "The web shop urls were successfully written "
@@ -172,8 +137,8 @@ public class ScrapeService {
 		alert.setHeaderText(null);
 		alert.setGraphic(null);
 	}
-
-	public CustomScraper getScraper() {
+	
+	public ElementEvaluator getScraper() {
 		return scraper;
 	}
 

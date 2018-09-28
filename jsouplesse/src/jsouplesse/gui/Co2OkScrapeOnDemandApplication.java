@@ -1,18 +1,15 @@
 package jsouplesse.gui;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-
 import javafx.application.Application;
 import javafx.event.EventHandler;
 import javafx.scene.Scene;
+import javafx.scene.control.ScrollPane;
 import javafx.scene.layout.GridPane;
+import javafx.scene.layout.Pane;
 import javafx.stage.Stage;
 import javafx.stage.WindowEvent;
 import jsouplesse.dataaccess.Connector;
-import jsouplesseutil.CrappyLogger;
-import jsouplesseutil.IOUtils;
+import jsouplesse.util.CrappyLogger;
 
 public class Co2OkScrapeOnDemandApplication extends Application {
 
@@ -31,13 +28,25 @@ public class Co2OkScrapeOnDemandApplication extends Application {
 		
 		MainScreenBuilder builder = new MainScreenBuilder(connector, logger);
 		GridPane mainScreen = builder.buildScreen();
+		ScrollPane mainWrapper = addScrollBar(mainScreen);
 		
-		Scene main = new Scene(mainScreen, 800, 550);
+		Scene main = new Scene(mainWrapper, 800, 550);
 		
 		primaryStage.setScene(main);
 		primaryStage.setTitle("Co2ok scrape on demand");
 		addOnCloseFunction(primaryStage);
 		primaryStage.show();
+	}
+	
+	private ScrollPane addScrollBar(Pane screenPart) {
+		// Create ScrollPane wrapper for the provided screen part.
+		ScrollPane scrollPane = new ScrollPane(screenPart);
+		// Set the properties: scroll only vertically, fill horizontally.
+		scrollPane.setFitToWidth(true);
+		scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+		scrollPane.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
+		
+		return scrollPane;
 	}
 
 	/**

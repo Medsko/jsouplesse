@@ -23,6 +23,7 @@ public class WebPage extends SuperDao {
 	public static final int TYPE_LIST = 2;
 	public static final int TYPE_DETAIL = 3;
 	public static final int TYPE_WEB_SHOP = 4;
+	public static final int TYPE_OTHER = 5;
 	
 	/** FK to the web site from which this web page was found. */
 	private Integer webSiteId;
@@ -38,6 +39,9 @@ public class WebPage extends SuperDao {
 	
 	/** URL of this page. */
 	private String pageUrl;
+	
+	/** The URL of the page on which the link to this page was found. */
+	private String parentUrl;
 	
 	/** The contents of the web page as an HTML document. */
 	private Document pageContents;
@@ -143,6 +147,18 @@ public class WebPage extends SuperDao {
 
 	public String getPageUrl() {
 		return pageUrl;
+	}
+	
+	public void setPageUrl(String pageUrl) {
+		this.pageUrl = pageUrl;
+	}
+
+	public String getParentUrl() {
+		return parentUrl;
+	}
+
+	public void setParentUrl(String parentUrl) {
+		this.parentUrl = parentUrl;
 	}
 
 	public FailedScan getFailedScan() {
