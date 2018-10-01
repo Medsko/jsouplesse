@@ -38,7 +38,7 @@ public class WebPageFetcher {
 	/** The URL of the page the search started on. */
 	private String grandParentUrl;
 	
-	/** 
+	/**
 	 * Flag signifying if the scanner should proceed to scanning the next page on the web site,
 	 * or if further requests are pointless. Is only set to false when status is 403 (forbidden).
 	 */

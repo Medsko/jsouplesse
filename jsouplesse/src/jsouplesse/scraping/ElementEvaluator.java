@@ -44,27 +44,6 @@ public class ElementEvaluator {
 	/** The list of company data that was retrieved in the search. */
 	protected List<Company> companies = new ArrayList<>();
 	
-	/**
-	 * Constructor to create a {@link ElementEvaluator} that selects the first viable link
-	 * inside the last element selected based on user input.
-	 */
-	@Deprecated
-	public ElementEvaluator(CrappyLogger logger, SqlHelper sqlHelper) {
-		this.logger = logger;
-		this.sqlHelper = sqlHelper; 
-	}
-	
-	// Use ElementEvaluator(CrappyLogger, SqlHelper, WebPageFetcher, String)
-	@Deprecated
-	public ElementEvaluator(CrappyLogger logger, SqlHelper sqlHelper, String selector) {
-		this.logger = logger;
-		this.selector = selector;
-		this.sqlHelper = sqlHelper;
-	}
-	
-	/**
-	 * Only legal constructor.
-	 */
 	public ElementEvaluator(CrappyLogger logger, 
 			SqlHelper sqlHelper, 
 			WebPageFetcher webPageFetcher, 

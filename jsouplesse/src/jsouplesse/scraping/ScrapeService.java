@@ -1,18 +1,14 @@
 package jsouplesse.scraping;
 
 import java.sql.SQLException;
-import java.util.List;
 
 import jsouplesse.Result;
 import jsouplesse.dataaccess.SqlHelper;
 import jsouplesse.dataaccess.WebSiteSaveBuffer;
-import jsouplesse.dataaccess.dao.WebPage;
 import jsouplesse.dataaccess.dao.WebSite;
-import jsouplesse.gui.ElementEvaluatorInput;
 import jsouplesse.gui.SpiderInput;
 import jsouplesse.util.CompanyFileWriter;
 import jsouplesse.util.CrappyLogger;
-import jsouplesse.util.WebStringUtils;
 import javafx.scene.control.Alert;
 
 /**
@@ -39,7 +35,7 @@ public class ScrapeService {
 	}
 	
 	/**
-	 * Central method to this service. Constructs a {@link CustomScraper}
+	 * Central method to this service. Constructs a {@link ElementEvaluator}
 	 * based on the provide {@link ScraperInput}, scrapes the target page
 	 * for company data
 	 */
