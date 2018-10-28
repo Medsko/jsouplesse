@@ -7,6 +7,8 @@ public class ElementEvaluatorInput {
 	private String attribute;
 	
 	private boolean shouldFetchWebPage;
+	
+	private boolean shouldFetchTextInLink;
 
 	public String getTag() {
 		return tag;
@@ -30,5 +32,13 @@ public class ElementEvaluatorInput {
 
 	public void setShouldFetchWebPage(boolean shouldFetchWebPage) {
 		this.shouldFetchWebPage = shouldFetchWebPage;
+	}
+
+	public boolean getShouldFetchTextInLink() {
+		return shouldFetchTextInLink;
+	}
+
+	public void setShouldFetchTextInLink(boolean shouldFetchTextInLink) {
+		this.shouldFetchTextInLink = shouldFetchTextInLink;
 	}
 }

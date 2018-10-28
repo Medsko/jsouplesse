@@ -98,4 +98,29 @@ public class Company {
 			emailAddressList.add(emailAddress);
 		}
 	}
+
+	@Override
+	public int hashCode() {
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + ((homePageUrl == null) ? 0 : homePageUrl.hashCode());
+		return result;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		Company other = (Company) obj;
+		if (homePageUrl == null) {
+			if (other.homePageUrl != null)
+				return false;
+		} else if (!homePageUrl.equals(other.homePageUrl))
+			return false;
+		return true;
+	}
 }

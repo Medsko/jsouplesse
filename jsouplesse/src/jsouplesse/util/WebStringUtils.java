@@ -36,8 +36,8 @@ public class WebStringUtils {
 	private WebStringUtils() {}
 	
 	/**
-	 * Treee-de-tee ta taa-de-ta...
-	 * Returns an {@link Optional<String>} that represents the parent directory of the given URL.
+	 * Treee-de-tee ta taa-de-ta... (Curtis Mayfield 4evah)
+	 * Returns a {@link String} that represents the parent directory of the given URL.
 	 * If the given URL is already that of home page, the returned {@link Optional} is empty.
 	 */
 	public static String moveOnUp(String url) {
@@ -47,10 +47,24 @@ public class WebStringUtils {
 		
 		String parentUrl = url.substring(0, url.lastIndexOf("/"));
 		
-		if (parentUrl.matches(URL_STRING_REGEX))
+		if (parentUrl.matches(INCLUSIVE_URL_REGEX))
 			return parentUrl;
 		else
 			return url;
+	}
+	
+	/**
+	 * Removes a search filter and any of its arguments from the given URL. If the given URL does
+	 * not contains such a clause, the URL is returned unchanged. 
+	 */
+	public static String removeFilterFromUrlIfPresent(String url) {
+		
+		String afterLastSlash = url.substring(url.lastIndexOf("/") + 1);
+		
+		if (afterLastSlash.contains("filter"))
+			url = url.substring(0, url.lastIndexOf("/"));
+	
+		return url;
 	}
 	
 	/**
@@ -126,7 +140,13 @@ public class WebStringUtils {
 		return formattedPhoneNumber;
 	}
 
-	/** Determines the web site name from the URL of one of its pages. */
+	/** 
+	 * Determines and returns the web site name from the URL of one of its pages. 
+	 * In 'https://www.google.com', the name of the web site would be 'google'. 
+	 * 
+	 * @param url - a valid URL.
+	 * @return the name of the web site the URL points to.
+	 */
 	public static String determineWebSiteNameFromUrl(String url) {
 		
 		if (url.startsWith("http"))

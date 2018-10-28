@@ -9,6 +9,8 @@ import java.nio.file.StandardOpenOption;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 
+import org.jsoup.nodes.Node;
+
 /**
  * First try at a logger class, which can write log messages to either
  * the command line or a log file, depending on the implementation.
@@ -20,6 +22,8 @@ public class CrappyLogger {
 	private BufferedWriter writer;
 	
 	private boolean isLogFileWritable;
+	
+	private static Path LOG_FILE;
 	
 	public final static String PATH_TO_LOG_DIRECTORY = "C:/jsouplesse/log";
 	
@@ -55,14 +59,15 @@ public class CrappyLogger {
 		// Use a formatter (of the dtf persuasion gehehe) to format the date.
 		DateTimeFormatter dtf = DateTimeFormatter.ofPattern("ddMMyyy");
 		String today = dtf.format(localDate);
-		
 		// Now set the file path.
-		Path logFile = logDirectory.resolve(today + "log.txt");
+		LOG_FILE = logDirectory.resolve(today + "log.txt");
 		
-		writer = Files.newBufferedWriter(logFile, StandardOpenOption.APPEND, 
+		writer = Files.newBufferedWriter(LOG_FILE, StandardOpenOption.APPEND, 
 				StandardOpenOption.CREATE, StandardOpenOption.WRITE);
 		
 		isLogFileWritable = true;
+		
+		writer.close();
 	}
 	
 	public void deInitialize() {
@@ -86,9 +91,40 @@ public class CrappyLogger {
 		else if (isLogFileWritable) {
 		
 			try {
+				
+				writer = Files.newBufferedWriter(LOG_FILE, StandardOpenOption.APPEND, 
+						StandardOpenOption.CREATE, StandardOpenOption.WRITE);
+				
 				// Try to write the message to the log file.
 				writer.write(message);
 				writer.newLine();
+				
+				writer.close();
+				
+			} catch (IOException ioex) {
+				// Too bad...no logs for this user.
+				ioex.printStackTrace();
+			}
+		}
+	}
+	
+	// TODO: this method might be useless (i.e. calling node.toString() yields same result)
+	public void logHtml(Node node) {
+		if (isCommandLineFine)
+			// Write the message to the command line.
+			System.out.println(node.toString());
+		
+		else if (isLogFileWritable) {
+		
+			try {
+				writer = Files.newBufferedWriter(LOG_FILE, StandardOpenOption.APPEND, 
+						StandardOpenOption.CREATE, StandardOpenOption.WRITE);
+				// Append the HTML of the node and its children to the writer.
+				node.html(writer);				
+				writer.newLine();
+				
+				writer.close();
+				
 			} catch (IOException ioex) {
 				// Too bad...no logs for this user.
 				ioex.printStackTrace();

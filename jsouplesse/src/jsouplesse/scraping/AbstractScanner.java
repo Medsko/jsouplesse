@@ -20,7 +20,7 @@ import jsouplesse.dataaccess.dao.WebSite;
  */
 public abstract class AbstractScanner implements Runnable {
 
-	protected RequestTimer timer;
+	protected WebSiteRequestConscience timer;
 	
 	protected WebSite webSite;
 	
@@ -37,14 +37,14 @@ public abstract class AbstractScanner implements Runnable {
 	/**
 	 * Creates a new AbstractScanner with the given database connection and
 	 * request timer. If the scanner will work on a web site that is already
-	 * being scanned, pass the same {@link RequestTimer} that other scanners
+	 * being scanned, pass the same {@link WebSiteRequestConscience} that other scanners
 	 * for said web site have. If it is the first scanner, create a new timer. 
 	 * 
 	 * @param timer - the timer that determines when to make the next request.
 	 * @param webSite - the data object representing the web site.
 	 * @param webPage - the web page that this scanner will work on.
 	 */
-	public AbstractScanner(RequestTimer timer, WebSite webSite, WebPage webPage) {
+	public AbstractScanner(WebSiteRequestConscience timer, WebSite webSite, WebPage webPage) {
 		this.timer = timer;
 		this.webSite = webSite;
 		this.webPage = webPage;

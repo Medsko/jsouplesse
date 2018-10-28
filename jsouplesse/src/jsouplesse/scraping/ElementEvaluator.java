@@ -2,6 +2,8 @@ package jsouplesse.scraping;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import org.jsoup.select.Selector.SelectorParseException;
@@ -20,8 +22,6 @@ public class ElementEvaluator {
 
 	private CrappyLogger logger;
 	
-	private SqlHelper sqlHelper;
-	
 	/** The selector used to select certain HTML elements. */
 	private String selector;
 	
@@ -29,13 +29,22 @@ public class ElementEvaluator {
 	
 	private boolean shouldFetchWebPage;
 	
+	private boolean shouldFetchTextInLink;
+	
 	private WebPageFetcher webPageFetcher;
 	
 	private String parentUrl;
 	
 	private WebPage webPage;
 	
-	private boolean foundOne = false;
+	private Elements firstRoundSelectedElements;
+	
+	/** Indicates whether this evaluator is the last in the chain of evaluations. */
+	private boolean lastInChain;
+	
+	private boolean firstRound = true;
+	
+	private boolean selectOnlyOne;
 	
 	// Output
 	/** The result of the operation. */
@@ -45,28 +54,41 @@ public class ElementEvaluator {
 	protected List<Company> companies = new ArrayList<>();
 	
 	public ElementEvaluator(CrappyLogger logger, 
-			SqlHelper sqlHelper, 
+			SqlHelper sqlHelper, // Might get useful in the future...
 			WebPageFetcher webPageFetcher, 
 			String selector) {
 		
 		this.logger = logger;
-		this.sqlHelper = sqlHelper;
 		this.webPageFetcher = webPageFetcher;
 		this.selector = selector;
 	}
+	
+	// TODO: towards self-learning Crawling
+	// 1) follow a CrawlPath (select element > link through > select element etc.)
+	// 2) check if the path is valid > if not, save failing step of path in List<CrawlStep>
+	// 3) check if the path yields result > if so, add to List<Company>
+	// 4) follow next path, while checking with each new step if that step has already been tried 
+	// 		unsuccessfully once (check List<CrawlStep>) > if so, move on to next CrawlPath
+	
 	
 	/**
 	 * Overloaded version of the core method, which kicks off the search by loading
 	 * the first web page and then calling {@link #evaluate(Element)}.
 	 */
 	public boolean evaluate(String pageUrl) {
-		if (!fetchPage(pageUrl)) {
+		// Update the parent URL for this Evaluator, if necessary. This is safe to do here, since
+		// this method is only called with a String URL argument from the ScrapeService.
+		parentUrl = WebStringUtils.removeFilterFromUrlIfPresent(pageUrl);
+		
+		Document pageContents = fetchPage(pageUrl); 
+		
+		if (pageContents == null) {
 			handleError("Failed to fetch the HTML document for page: " 
 					+ pageUrl, "Fetch fail!");
 			return false;
 		}
 		
-		return evaluate(webPage.getPageContents());
+		return evaluate(pageContents);
 	}
 	
 	/**
@@ -75,114 +97,125 @@ public class ElementEvaluator {
 	 * employed to dig further down in the selected elements or the fetched web page.
 	 */
 	public boolean evaluate(Element element) {
-		// Check whether we should dig (even) deeper.
-		if (selector != null) {
-			// We should. Use the selector to select matching elements.
-			Elements subElements;
+
+		Elements subElements;
+		
+		try {
+			// Use the selector to select matching elements.
+			subElements = element.select(selector);
+		} catch (SelectorParseException spex) {
+			// Invalid selector. Set the result and return false.
+			handleSelectorError(constructSelectorErrorMessage());
+			return false;
+		}
+		
+		// If this is the first time we walk this path, do some validity checks and provide 
+		// feedback if the search yields no results.
+		if (firstRound) {
+			// Save the elements that where selected in the first round.
+			firstRoundSelectedElements = subElements;
 			
-			try {
-				subElements = element.select(selector);
-				
-			} catch (SelectorParseException spex) {
-				// Invalid selector. Set the result and return false.
-				handleSelectorError(constructSelectorErrorMessage());
+			if (subElements.size() > 0) {
+				logger.log("Selector '" + selector + "' was used to select section: ");
+				logger.logHtml(subElements.get(0));
+			} else {
+				handleSelectorError("Selector '" + selector + "' yielded no results!");
+				return false;
+			}
+			firstRound = false;
+		}
+		
+		for (Element subElement : subElements) {
+			// Evaluate the sub element.
+			if (!subEvaluate(subElement)) {
+				// An error occurred. Result has already been set.
 				return false;
 			}
 			
-			if (shouldFetchWebPage) {
-				
-				if (!fetchPage(subElements)) {
-					// Result has already been set.
-					return false;
-				}
-				// Let the sub evaluator do its thing on the retrieved HTML document.
-				if (!subEvaluate(webPage.getPageContents())) {
-					// The sub evaluator had an error. Result has been set.
-					return false;
-				}
-			} else {
-				// Evaluate the sub elements.
-				if (!subEvaluate(subElements)) {
-					// The sub evaluator had an error. Result has been set.
-					return false;
-				}
-			}			
-		} else {
+			if (selectOnlyOne)
+				return true;
+		}
+		return true;
+	}
+	
+	/**
+	 * Checks whether an element is a link, and if not, selects the first child element that is a
+	 * link and returns it. If no such element is found, null is returned.
+	 */
+	private Element selectFirstLink(Element element) {
+		if (!element.tagName().equals("a"))
+			// The currently selected element is not an anchor. 
+			// Select the first child that is an anchor with an href.
+			element = element.selectFirst("a[href]");
+		return element;
+	}
+	
+	/**
+	 * Uses evaluates a single HTML element. If this is the last evaluator in the evaluation chain,
+	 * company data will be extracted. In other cases, the {@link #subEvaluator} is used to execute
+	 * the next step(s) of the path. In case of an error, a result is constructed. 
+	 */
+	private boolean subEvaluate(Element element) {
+		
+		if (lastInChain) {
 			// No deeper digging required. Select the URL from the current element.
-			String webShopUrl = element.attr("href");
-			
-			if (webShopUrl.isEmpty()) {
-				// The currently selected element is not an anchor. 
-				// Select the first child that is an anchor with an href.
-				Element subElement = element.selectFirst("a[href]");
-				webShopUrl = subElement.attr("href");
+			String webShopUrl = null;
+
+			element = selectFirstLink(element);
+			// Check whether we should select the attribute of the anchor, or its text.
+			if (shouldFetchTextInLink) {
+				webShopUrl = element.text();
+			} else {
+				webShopUrl = element.attr("href");
 			}
-			
 			// Check if the result matches the most basic requirements for a URL.
 			if (webShopUrl.matches(WebStringUtils.INCLUSIVE_URL_REGEX)) {
 				
 				String companyName = WebStringUtils.determineWebSiteNameFromUrl(webShopUrl);
 				Company company = new Company(companyName);
-				company.setHomePageUrl(webShopUrl);
+				company.setHomePageUrl(webShopUrl);				
 				companies.add(company);
 				logger.log("Successfully scraped: " + company.toString());
 			}
-		}
-		return true;
-	}
-	
-	/**
-	 * Uses the {@link #subEvaluator} to evaluate a single HTML element.
-	 * A result is constructed in case of an error. 
-	 */
-	private boolean subEvaluate(Element element) {
-// For testing purposes		
-//		if (foundOne) {
-//			boolean foundAll = true;
-//			return foundAll;
-//		}
-		
-		if (!subEvaluator.evaluate(element)) {
-			// The sub evaluator had an error. Get the result from the failed 
-			// evaluator, then return false so an error message can be built.
-			result = subEvaluator.getResult();
-			return false;
-		}
-		// Add the company data that the sub evaluator gathered to the
-		// company list.
-		companies.addAll(subEvaluator.getCompanies());
-		
-		// For testing purposes		
-//		if (subEvaluator.getCompanies().size() > 0)
-//			foundOne = true;
-
-		return true;
-	}
-	
-	private boolean subEvaluate(Elements elements) {
-		for (Element element : elements) {
-			if (!subEvaluate(element))
+		} else {
+			// A sub evaluation should be carried out.
+			if (shouldFetchWebPage) {
+				// The sub evaluation should be performed on the linked-to web page. Fetch it.
+				element = fetchPage(element);
+				
+				if (element == null)
+					// Failure to retrieve the web page. Result has been set.
+					return false;
+			}
+			// Update the parent URL of the subEvaluator, if necessary.
+			subEvaluator.setParentUrl(WebStringUtils.determineBaseUrl(webPage.getPageUrl()));
+			
+			if (!subEvaluator.evaluate(element)) {
+				// The sub evaluator had an error. Get the result from the failed 
+				// evaluator, then return false so an error message can be built.
+				result = subEvaluator.getResult();
 				return false;
+			}
+			// Add the company data that the sub evaluator gathered to the company list.
+			for (Company company : subEvaluator.getCompanies()) {
+				// Ignore companies that we already collected.
+				if (!companies.contains(company))
+					companies.add(company);
+			}
+			
 		}
 		return true;
 	}
+
 	
-	/**
-	 * Fetches the web page that corresponds to the	first link found in 
-	 * the provided {@link Elements}.
-	 */
-	private boolean fetchPage(Elements selectedElements) {
-		// Select the first viable link in the selected elements.
-		Element link = selectedElements.select("a[href]").first();
+	private Document fetchPage(Element selectedElement) {
 		
-		if (link == null) {
-			// The selected elements did not contain an anchor tag with an href.
-			String deconstructedSelector = deconstructSelector();
-			handleSelectorError("ElementEvaluator.fetchPage() - the input " + deconstructedSelector
-					+ " did not select an element with a valid link.");
-			return false;
-		}
-		String pageUrl = link.attr("href");
+		String pageUrl;
+		
+		if (shouldFetchTextInLink)
+			pageUrl = selectedElement.text();
+		else
+			pageUrl = selectedElement.attr("href");
 		
 		return fetchPage(pageUrl);
 	}
@@ -190,16 +223,18 @@ public class ElementEvaluator {
 	/**
 	 * Fetches the page for the given URL. 
 	 */
-	private boolean fetchPage(String pageUrl) {
+	private Document fetchPage(String pageUrl) {
+		// If the URL is relative, resolve against parent.
+		pageUrl = WebStringUtils.resolveAgainstParent(pageUrl, parentUrl);
 		
 		if (!webPageFetcher.fetch(pageUrl)) {
 			handleSelectorError("ElementEvaluator.fetchPage() - the request for the web page " 
 					+ pageUrl + " did not return a response that could be parsed.");
-			return false;
+			return null;
 		}
 		webPage = webPageFetcher.getWebPage();
 		
-		return webPage.getPageContents() != null;
+		return webPage.getPageContents();
 	}
 	
 	private String constructSelectorErrorMessage() {
@@ -215,7 +250,7 @@ public class ElementEvaluator {
 		String deconstructedSelector = "tag: '";
 		if (selector.startsWith("*")) {
 			// The tag field was left empty in the input.
-			deconstructedSelector += "<empty>,";
+			deconstructedSelector += "<empty>',";
 		} else if (selector.contains("[")) {
 			// An attribute was provided in the input. First, end the tag part.
 			deconstructedSelector += selector.substring(0, selector.indexOf("[")) + "', ";
@@ -266,13 +301,56 @@ public class ElementEvaluator {
 	public void setShouldFetchWebPage(boolean shouldFetchWebPage) {
 		this.shouldFetchWebPage = shouldFetchWebPage;
 	}
+	
+	public void setShouldFetchTextInLink(boolean shouldFetchTextInLink) {
+		this.shouldFetchTextInLink = shouldFetchTextInLink;
+	}
 
 	public List<Company> getCompanies() {
 		return companies;
 	}
 	
+	public void setLastInChain(boolean lastInChain) {
+		this.lastInChain = lastInChain;
+	}
+
 	public String getWebSiteName() {
 		String ueberWebSiteUrl = webPageFetcher.getGrandParentUrl();
 		return WebStringUtils.determineWebSiteNameFromUrl(ueberWebSiteUrl);
+	}
+
+	public void setSelectOnlyOne(boolean selectOnlyOne) {
+		this.selectOnlyOne = selectOnlyOne;
+		
+		if (subEvaluator != null)
+			subEvaluator.setSelectOnlyOne(selectOnlyOne);
+	}
+
+	/**
+	 * Recursively collects all steps that were executed by this evaluator and all its 
+	 * sub-evaluators.
+	 * @return a list of the crawl steps taken in this chain, in reverse order of execution. 
+	 */
+	public List<CrawlStep> getFirstRoundCrawlPath() {
+		
+		List<CrawlStep> crawlPath = new ArrayList<>();
+		// Get the crawl steps of lower evaluators in the chain.
+		if (subEvaluator != null)
+			crawlPath.addAll(subEvaluator.getFirstRoundCrawlPath());
+		
+		// Check if this evaluator selected any elements.
+		if (firstRoundSelectedElements != null) {
+			// Construct this evaluator's crawl step.
+			CrawlStep crawlStep = new CrawlStep();
+			crawlStep.setSelector(selector);
+			crawlStep.setSelectedElements(firstRoundSelectedElements.first());
+			
+			if (shouldFetchWebPage)
+				crawlStep.setFetchedLink(webPage.getPageUrl());
+			
+			crawlPath.add(crawlStep);
+		}
+		
+		return crawlPath;
 	}
 }

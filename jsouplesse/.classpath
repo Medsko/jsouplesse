@@ -3,6 +3,7 @@
 	<classpathentry kind="src" path="src"/>
 	<classpathentry kind="src" path="lib"/>
 	<classpathentry kind="src" path="ddl"/>
+	<classpathentry kind="src" path="test"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.8">
 		<accessrules>
 			<accessrule kind="accessible" pattern="javafx/**"/>
@@ -10,5 +11,6 @@
 	</classpathentry>
 	<classpathentry kind="lib" path="lib/jsoup-1.11.3.jar"/>
 	<classpathentry kind="lib" path="lib/sqlite-jdbc-3.21.0.jar"/>
+	<classpathentry kind="lib" path="lib/javafx-2.2.0.Final.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

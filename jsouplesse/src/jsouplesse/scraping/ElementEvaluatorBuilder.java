@@ -40,20 +40,22 @@ public class ElementEvaluatorBuilder {
 		
 		webPageFetcher = new WebPageFetcher(logger, sqlHelper, grandParentUrl);
 		
+		ElementEvaluator subEvaluator = null;
+		
 		for (ElementEvaluatorInput input : inputList) {
-			
 			if (elementEvaluator == null) {
 				// Build the primary ElementEvaluator.
-				elementEvaluator = build(input);
+				elementEvaluator = build(input, grandParentUrl);
 			} else {
 				// Build a new ElementEvaluator and set it on the primary evaluator.
-				ElementEvaluator subEvaluator = build(input);
+				subEvaluator = build(input, grandParentUrl);
 				elementEvaluator.setSubElementEvaluator(subEvaluator);
 			}
 		}
-		// Construct a standard evaluator that will fetch the anchor tag in the deepest selection.
-		ElementEvaluator subElementEvaluator = new ElementEvaluator(logger, sqlHelper, null, null);
-		elementEvaluator.setSubElementEvaluator(subElementEvaluator);
+		// Set a flag on the last sub evaluator to signify it is the last in the chain.
+		subEvaluator.setLastInChain(true);
+		// For testing purposes: only execute the crawl path once.
+		elementEvaluator.setSelectOnlyOne(true);
 		
 		return elementEvaluator;
 	}
@@ -62,12 +64,14 @@ public class ElementEvaluatorBuilder {
 	 * Builds a single shallow ElementEvaluator based on the provided
 	 * {@link ElementEvaluatorInput}. 
 	 */
-	private ElementEvaluator build(ElementEvaluatorInput input) {
+	public ElementEvaluator build(ElementEvaluatorInput input, String grandParentUrl) {
 		
 		String selector = constructSelector(input.getTag(), input.getAttribute());
 		
 		ElementEvaluator evaluator = new ElementEvaluator(logger, sqlHelper, webPageFetcher, selector);
 		evaluator.setShouldFetchWebPage(input.getShouldFetchWebPage());
+		evaluator.setShouldFetchTextInLink(input.getShouldFetchTextInLink());
+		evaluator.setParentUrl(grandParentUrl);
 				
 		return evaluator;
 	}

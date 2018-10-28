@@ -8,12 +8,12 @@ import jsouplesse.dataaccess.dao.Company;
 import jsouplesse.dataaccess.dao.WebPage;
 import jsouplesse.dataaccess.dao.WebSite;
 import jsouplesse.scraping.AbstractScanner;
-import jsouplesse.scraping.RequestTimer;
+import jsouplesse.scraping.WebSiteRequestConscience;
 import jsouplesse.util.WebStringUtils;
 
 public class AltruistoScanner extends AbstractScanner {
 
-	public AltruistoScanner(RequestTimer timer, WebSite webSite, WebPage webPage) {
+	public AltruistoScanner(WebSiteRequestConscience timer, WebSite webSite, WebPage webPage) {
 		super(timer, webSite, webPage);
 	}
 

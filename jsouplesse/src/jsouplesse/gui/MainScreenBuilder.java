@@ -9,6 +9,7 @@ import javafx.event.EventHandler;
 import javafx.geometry.HPos;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
@@ -19,6 +20,8 @@ import javafx.scene.layout.GridPane;
 import javafx.scene.layout.Priority;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
+import javafx.stage.Stage;
+import javafx.stage.StageStyle;
 import jsouplesse.dataaccess.Connector;
 import jsouplesse.dataaccess.SqlHelper;
 import jsouplesse.scraping.ScrapeService;
@@ -94,7 +97,12 @@ public class MainScreenBuilder {
 		columnThreeConstraints.setHgrow(Priority.ALWAYS);
 		columnThreeConstraints.setHalignment(HPos.RIGHT);
 		
-		mainScreen.getColumnConstraints().addAll(columnOneConstraints, columnTwoConstraints, columnThreeConstraints);
+		ColumnConstraints columnFourConstraints = new ColumnConstraints(100, 100, Double.MAX_VALUE);
+		columnFourConstraints.setHgrow(Priority.ALWAYS);
+		columnFourConstraints.setHalignment(HPos.RIGHT);
+		
+		mainScreen.getColumnConstraints().addAll(columnOneConstraints, columnTwoConstraints, 
+				columnThreeConstraints, columnFourConstraints);
 
 		service = new ScrapeService(sqlHelper, logger);
 		
@@ -224,7 +232,6 @@ public class MainScreenBuilder {
 	 */
 	private void showAlertFromService() {
 		Alert alert = service.getAlert();
-		alert.initOwner(mainScreen.getScene().getWindow());
 		alert.show();
 	}
 

@@ -1,43 +1,84 @@
 package jsouplesse.scraping;
 
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
 import java.util.Random;
 import java.util.stream.LongStream;
 
+import org.jsoup.nodes.Document;
+
 import jsouplesse.dataaccess.dao.WebSite;
 import jsouplesse.util.CrappyLogger;
+import jsouplesse.util.WebStringUtils;
 
 /**
  * This helper class keeps track of the time passed since the last request was made.
  * For this mechanism to work, all scanners that are working on the same web site
- * should share one and the same {@link RequestTimer} - meaning that in a multi-threaded
+ * should share one and the same {@link WebSiteRequestConscience} - meaning that in a multi-threaded
  * implementation, both essential methods should be synchronized.
  * 
- * Each time a scanner is initialized for a new web site, a new {@link RequestTimer}
+ * Each time a scanner is initialized for a new web site, a new {@link WebSiteRequestConscience}
  * is also initialized.
  */
-public class RequestTimer {
+public class WebSiteRequestConscience {
 
-	protected CrappyLogger logger;
+	// TODO: rework this into a WebSiteRequestConscience:
+	// 1) have WebPageFetcher check whether requested web page is on a new web site
+	// 2) if so, before sending the request for the web page, retrieve the file at 
+	// 	[webSiteBaseUrl]/robots.txt and process it
+	// 3) save the result of 2) in this, so we can check if later requests are ethic.
 	
-	protected Instant tsNextRequest;
+	private CrappyLogger logger;
 	
-	protected String webSiteBaseUrl;
+	private Instant tsNextRequest;
 	
-	protected long randomInterval;
+	private String webSiteBaseUrl;
 	
-	// Use RequestTimer(CrappyLogger, String).
-	@Deprecated
-	public RequestTimer() {}
+	private long randomInterval;
 	
-	public RequestTimer(CrappyLogger logger, String webSiteBaseUrl) {
+	/** Directories that we are allowed to visit, according to robots.txt. */
+	private List<String> allowedDirs;
+	
+	/** Directories that we are <strong>forbidden</strong> to visit, according to robots.txt. */
+	private List<String> disAllowedDirs;
+	
+	public WebSiteRequestConscience(CrappyLogger logger, String webSiteBaseUrl) {
 		this.logger = logger;
 		this.webSiteBaseUrl = webSiteBaseUrl;
 	}
 	
-	// TODO: instead of waiting one second when isRightTime() returns false, the Thread could also sleep for randomInterval milliseconds....
+	/**
+	 * Determines whether the given request for a page is ethical, i.e. in accordance with the
+	 * web site's robots.txt. 
+	 */
+	public boolean isRequestEthical(String pageUrl) {
+		// Determine the path without the root.
+		String urlPath = null;
+		try {
+			URI pageUri = new URI(pageUrl);
+			urlPath = pageUri.getPath();			
+		} catch (URISyntaxException e) {
+			e.printStackTrace();
+		}
 		
+		// TODO: finish this method.
+//		if (disAllowedDirs.contains(o))
+		
+		return true;
+	}
+	
+	/**
+	 * Walks through the provided {@link Document} which was found at [webSiteBaseUrl]/robots.txt
+	 * and extracts the allowed and disallowed directories from it, which are added to the lists.
+	 */
+	public void processRobotsTxt(Document robotsTxt) {
+		// TODO: finish this method.
+		// See https://www.google.nl/robots.txt for a nice inclusive example.
+	}
+	
 	/**
 	 * Determines whether a next request can be sent, without instantly coming across as
 	 * non-/in-/super-human. Checks the current time against {@link WebSite#getTsLastRequest()}.
@@ -77,6 +118,10 @@ public class RequestTimer {
 		return randomInterval;
 	}
 
+	public String getWebSiteName() {
+		return WebStringUtils.determineWebSiteNameFromUrl(webSiteBaseUrl);
+	}
+	
 	public String getWebSiteBaseUrl() {
 		return webSiteBaseUrl;
 	}

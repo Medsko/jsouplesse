@@ -1,11 +1,13 @@
 package jsouplesse.scraping;
 
 import java.sql.SQLException;
+import java.util.List;
 
 import jsouplesse.Result;
 import jsouplesse.dataaccess.SqlHelper;
 import jsouplesse.dataaccess.WebSiteSaveBuffer;
 import jsouplesse.dataaccess.dao.WebSite;
+import jsouplesse.gui.AlertBuilder;
 import jsouplesse.gui.SpiderInput;
 import jsouplesse.util.CompanyFileWriter;
 import jsouplesse.util.CrappyLogger;
@@ -29,9 +31,12 @@ public class ScrapeService {
 	
 	private Alert alert;
 	
+	private AlertBuilder alertBuilder;
+	
 	public ScrapeService(SqlHelper sqlHelper, CrappyLogger logger) {
 		this.sqlHelper = sqlHelper;
 		this.logger = logger;
+		alertBuilder = new AlertBuilder();
 	}
 	
 	/**
@@ -74,8 +79,11 @@ public class ScrapeService {
 		CompanyFileWriter writer = new CompanyFileWriter();
 		
 		if (scraper.getCompanies().size() == 0) {
-			buildErrorAlert("Result fail!", "The scan yielded no results! Are you sure you "
-					+ "entered all steps correctly?");
+			// Get the first sequence of executed crawl steps from the evaluator and use it to 
+			// construct helpful feedback for the user. 
+			List<CrawlStep> failedCrawlSteps = scraper.getFirstRoundCrawlPath();
+			alert = alertBuilder.buildResultFailErrorAlert("The scan yielded no results! Are you "
+					+ "sure you entered all steps correctly?", failedCrawlSteps);
 			return false;
 		}
 
@@ -114,8 +122,7 @@ public class ScrapeService {
 		
 		return true;
 	}
-	
-	
+		
 	private void buildErrorAlert(String title, String message) {
 		alert = new Alert(Alert.AlertType.ERROR);
 		alert.setTitle(title);

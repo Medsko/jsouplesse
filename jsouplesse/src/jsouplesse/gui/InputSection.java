@@ -16,6 +16,8 @@ public class InputSection {
 	private TextField inputAttribute;
 	
 	private CheckBox fetchPageCheckBox;
+	
+	private CheckBox fetchTextInLinkCheckBox;
 
 	public Label getLabelTagName() {
 		return labelTag;
@@ -57,12 +59,21 @@ public class InputSection {
 		this.fetchPageCheckBox = fetchPageCheckBox;
 	}
 	
+	public CheckBox getFetchTextInLink() {
+		return fetchTextInLinkCheckBox;
+	}
+
+	public void setFetchTextInLinkCheckBox(CheckBox fetchTextInLink) {
+		this.fetchTextInLinkCheckBox = fetchTextInLink;
+	}
+
 	public boolean isValid() {
 		return !inputTag.getText().isEmpty() || !inputAttribute.getText().isEmpty();
 	}
 	
 	public void removeInputSectionFromScreen(Pane screen) {
 		screen.getChildren().remove(fetchPageCheckBox);
+		screen.getChildren().remove(fetchTextInLinkCheckBox);
 		screen.getChildren().remove(inputAttribute);
 		screen.getChildren().remove(labelAttribute);
 		screen.getChildren().remove(inputTag);
@@ -74,6 +85,7 @@ public class InputSection {
 		elementEvaluatorInput.setTag(inputTag.getText());
 		elementEvaluatorInput.setAttribute(inputAttribute.getText());
 		elementEvaluatorInput.setShouldFetchWebPage(fetchPageCheckBox.isSelected());
+		elementEvaluatorInput.setShouldFetchTextInLink(fetchTextInLinkCheckBox.isSelected());
 		return elementEvaluatorInput;
 	}
 }

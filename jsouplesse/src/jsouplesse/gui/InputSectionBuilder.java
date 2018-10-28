@@ -25,6 +25,10 @@ public class InputSectionBuilder {
 		inputTagName.setTooltip(tagTooltip);
 		screen.add(inputTagName, 1, rowNumberTagName);
 
+		// Create a check box indicating whether the text in the final tag should be selected as output.
+		CheckBox fetchTextInLinkCheckBox = new CheckBox("Fetch text in tag");
+		screen.add(fetchTextInLinkCheckBox, 2, rowNumberTagName);
+		
 		int rowNumberAttribute = rowNumberTagName + 1;
 		
 		// Add a label for input field attribute.
@@ -44,7 +48,7 @@ public class InputSectionBuilder {
 		CheckBox fetchPageCheckBox = new CheckBox("Fetch linked page");
 		screen.add(fetchPageCheckBox, 2, rowNumberAttribute);
 		fetchPageCheckBox.setAlignment(Pos.BOTTOM_LEFT);
-		
+				
 		// Create an InputSection and set the fields on it. 
 		InputSection inputSection = new InputSection();
 		inputSection.setLabelTag(labelTagName);
@@ -52,6 +56,7 @@ public class InputSectionBuilder {
 		inputSection.setLabelAttribute(labelAttribute);
 		inputSection.setInputAttribute(inputAttribute);
 		inputSection.setFetchPageCheckBox(fetchPageCheckBox);
+		inputSection.setFetchTextInLinkCheckBox(fetchTextInLinkCheckBox);
 		
 		return inputSection;
 	}

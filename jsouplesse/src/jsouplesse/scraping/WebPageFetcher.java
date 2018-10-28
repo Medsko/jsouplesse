@@ -32,8 +32,8 @@ public class WebPageFetcher {
 	/** Helper that creates and sends a human-like request and returns the response. */
 	private PlausibleRequestHelper hermes = new PlausibleRequestHelper();
 	
-	/** Holds {@link RequestTimer}s for every web site that requests are sent to. */
-	private Map<String, RequestTimer> requestTimers;
+	/** Holds {@link WebSiteRequestConscience}s for every web site that requests are sent to. */
+	private Map<String, WebSiteRequestConscience> collectiveConscience;
 
 	/** The URL of the page the search started on. */
 	private String grandParentUrl;
@@ -55,7 +55,7 @@ public class WebPageFetcher {
 		this.sqlHelper = sqlHelper;
 		this.grandParentUrl = grandParentUrl;
 		currentParentUrl = grandParentUrl;
-		requestTimers = new HashMap<>();
+		collectiveConscience = new HashMap<>();
 	}
 	
 	/**
@@ -76,14 +76,43 @@ public class WebPageFetcher {
 		webPage = new WebPage(sqlHelper, fullPageUrl);
 		webPage.setWebPageTypeId(WebPage.TYPE_OTHER);
 
-		waitUntilTimeIsRight(fullPageUrl);
+		// Get or initialize the conscience for this web site.
+		WebSiteRequestConscience conscience = getWebSiteRequestConscience(fullPageUrl);
 		
-		Response response = null;
-		Document pageContents = null;
+		// Check whether the request is moral (according to robots.txt).
+		if (!conscience.isRequestEthical(fullPageUrl))
+			// Do the right thing.
+			return false;
 		
+		// Our conscience is clear. Now hold off sending the next request until the time is right.
+		waitUntilTimeIsRight(conscience);
+		
+		// Attempt to retrieve the document of the page and set them on the web page object.
+		Document pageContents = getWebPageDocument(fullPageUrl);
+		webPage.setPageContents(pageContents);
+		
+		if (webPage.haveContentsBeenRetrieved()) {
+			logger.log("WebPageFetcher has successfully retrieved the contents for page " 
+					+ pageUrl);
+			return true;
+		} else {
+			logger.log("WebPageFetcher failed to retrieve contents for page " + pageUrl);
+			return false;
+		}
+	}
+	
+	/**
+	 * Retrieves the HTML document at the provided URL, parses it if possible and returns it.
+	 * 
+	 * @return the parsed HTML document, or null if something went wrong or the document could not
+	 * be parsed. 
+	 */
+	private Document getWebPageDocument(String fullPageUrl) {
+		
+		Document pageContents = null;		
 		try {
 			// Use the helper to construct a human-like request.
-			response = hermes.sendRequest(fullPageUrl);
+			Response response = hermes.sendRequest(fullPageUrl);
 			
 			if (hermes.getCanParseResponse())
 				// Parse the results and set the resulting HTML document on the list page.
@@ -95,41 +124,24 @@ public class WebPageFetcher {
 				// If we've been blocked, further scanning is pointless...for now.
 				shouldResumeScanning = false;
 				logger.log("WebPageInitializer got a 'Forbidden' code response!");
-				return false;
 			}
 			
 		} catch (IOException ioex) {
 			logger.log("WebPageFetcher.fetch() - I/O exception during request.");
 			logger.log(ioex.getMessage());
 		}
-		// Set the contents on the web page.
-		webPage.setPageContents(pageContents);
 		
-		// Update the currentParentUrl if necessary.
-		// TODO: figure out a way to reset to the grandParentUrl when appropriate.
-//		updateCurrentParentUrl(fullPageUrl, response.url().toString());
-		
-		// Try to extract an external link.
-		Optional<String> externalLink = WebStringUtils.extractExternalLink(fullPageUrl, currentParentUrl);
-		
-		if (externalLink.isPresent())
-			// An external link was found. Set it as the new currentParentUrl.
-			currentParentUrl = externalLink.get();	
-		
-		if (webPage.haveContentsBeenRetrieved()) {
-			logger.log("WebPageFetcher has successfully retrieved the contents for "
-					+ "page " + pageUrl);
-			return true;
-		} else {
-			logger.log("WebPageFetcher failed to retrieve contents for "
-					+ "page " + pageUrl);
-			return false;
-		}
+		return pageContents;
 	}
 	
+	// TODO: logic for this operation should be moved to and executed in ElementEvaluator (or its 
+	// successor): that way, the ElementEvaluator that retrieves the web page on the new site
+	// can set the new parentUrl as current for as long as its subEvaluator(s) is working on that
+	// particular site, and set it back once the subEvaluator (chain) is finished.
 	private void updateCurrentParentUrl(String fullPageUrl, String resultUrl) {
 		// Try to extract an external link.
-		Optional<String> externalLink = WebStringUtils.extractExternalLink(fullPageUrl, currentParentUrl);
+		Optional<String> externalLink = 
+				WebStringUtils.extractExternalLink(fullPageUrl, currentParentUrl);
 		
 		if (externalLink.isPresent())
 			// An external link was found. Set it as the new currentParentUrl.
@@ -142,23 +154,46 @@ public class WebPageFetcher {
 		}
 	}
 	
-	private void waitUntilTimeIsRight(String pageUrl) {
-		// Check whether a timer has already been added to the map for this web site.
+	/**
+	 * Attempts to get the {@link WebSiteRequestConscience} for the web site that the requested 
+	 * page is on from the map. If no conscience has been initialized yet, a new one is constructed,
+	 * added to the map and then returned.
+	 * 
+	 * @param pageUrl - the URL of the page that the next request will attempt to retrieve.
+	 * @return the (possibly freshly constructed) conscience for the web site the page is on. 
+	 */
+	private WebSiteRequestConscience getWebSiteRequestConscience(String pageUrl) {
+		// Check whether a conscience has already been added to the map for this web site.
 		String webSiteName = WebStringUtils.determineWebSiteNameFromUrl(pageUrl);
-		RequestTimer timer = requestTimers.get(webSiteName);
+		WebSiteRequestConscience conscience = collectiveConscience.get(webSiteName);
 		
-		if (timer == null) {
+		if (conscience == null) {
 			// Construct a new timer for this web site and add it to the map.
-			timer = new RequestTimer(logger, webSiteName);
-			requestTimers.put(webSiteName, timer);
+			conscience = new WebSiteRequestConscience(logger, webSiteName);
+			collectiveConscience.put(webSiteName, conscience);
+			
+			// Retrieve the robots.txt file from the web site.
+			String robotsUrl = WebStringUtils.determineBaseUrl(pageUrl);
+			robotsUrl = WebStringUtils.appendSlash(robotsUrl) + "robots.txt";
+			Document robotsTxt = getWebPageDocument(robotsUrl);
+			conscience.processRobotsTxt(robotsTxt);
 		}
-		
+
+		return conscience;
+	}
+	 
+	
+	/**
+	 * Uses the provided conscience to wait until enough time has passed to make the next request.
+	 * @param conscience - the conscience for the web site that the next requested web page is on.
+	 */
+	private void waitUntilTimeIsRight(WebSiteRequestConscience conscience) {
 		try {
 			// Wait until the time is right.
-			while (!timer.isRightTime()) {
-				long randomInterval = timer.getRandomInterval();
+			while (!conscience.isRightTime()) {
+				long randomInterval = conscience.getRandomInterval();
 				logger.log("Waiting for " + randomInterval + " milliseconds before "
-						+ "sending next request to " + webSiteName + ".");
+						+ "sending next request to " + conscience.getWebSiteBaseUrl() + ".");
 				Thread.sleep(randomInterval);
 			}
 		} catch (InterruptedException iex) {

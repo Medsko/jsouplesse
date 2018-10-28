@@ -3,7 +3,7 @@ package jsouplesse.concretescanners;
 import jsouplesse.dataaccess.dao.WebPage;
 import jsouplesse.dataaccess.dao.WebSite;
 import jsouplesse.scraping.AbstractScanner;
-import jsouplesse.scraping.RequestTimer;
+import jsouplesse.scraping.WebSiteRequestConscience;
 
 public class ScannerFactory {
 
@@ -14,7 +14,7 @@ public class ScannerFactory {
 	public final static String GASTVRIJ_ROTTERDAM = "gastvrij-rotterdam";
 	public final static String ALTRUISTO = "altruisto";
 	
-	public static AbstractScanner createScanner(RequestTimer timer, WebSite webSite, WebPage webPage) {
+	public static AbstractScanner createScanner(WebSiteRequestConscience timer, WebSite webSite, WebPage webPage) {
 		// TODO: use the field WebPage.typeId to determine the type of scanner after the web site has been determined.
 		switch (webSite.getName()) {
 			case GASTVRIJ_ROTTERDAM:

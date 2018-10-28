@@ -17,7 +17,8 @@ import jsouplesse.dataaccess.dao.Company;
 import jsouplesse.dataaccess.dao.WebPage;
 import jsouplesse.dataaccess.dao.WebSite;
 import jsouplesse.scraping.AbstractScanner;
-import jsouplesse.scraping.RequestTimer;
+import jsouplesse.scraping.WebSiteRequestConscience;
+import jsouplesse.util.CrappyLogger;
 import jsouplesse.util.IOUtils;
 import jsouplesse.util.WebStringUtils;
 
@@ -45,6 +46,8 @@ public class SearchCoordinator {
 	 */
 	private SqlHelper sqlHelper;
 	
+	private CrappyLogger logger;
+	
 	/**
 	 * In the future, this list should be the pool of scanners that can be run concurrently.
 	 */
@@ -56,6 +59,9 @@ public class SearchCoordinator {
 	public SearchCoordinator() {
 		Connector connector = new Connector();
 		sqlHelper = new SqlHelper(connector);
+		
+		// For now, log directly to command line. 
+		logger = new CrappyLogger(true);
 	}
 
 	public void scanWebSites(List<String> urls) {
@@ -86,11 +92,13 @@ public class SearchCoordinator {
 	}
 	
 	public AbstractScanner createScanner(String url) {
+		String webSiteBaseUrl = WebStringUtils.determineBaseUrl(url);
 		// Create the objects necessary to instantiate a scanner.
-		RequestTimer timer = new RequestTimer();
+		WebSiteRequestConscience timer = new WebSiteRequestConscience(logger, webSiteBaseUrl);
 		WebSite webSite = new WebSite(sqlHelper, url);
 		webSite.setName(WebStringUtils.determineWebSiteNameFromUrl(url));
-		WebPage homePage = webSite.createWebPage(url, WebPage.TYPE_AGGREGATE);
+		WebPage homePage = new WebPage(sqlHelper, url);
+		homePage.setWebPageTypeId(WebPage.TYPE_AGGREGATE);
 		// Create the scanner.
 		AbstractScanner webSiteScanner = ScannerFactory.createScanner(timer, webSite, homePage); 
 		

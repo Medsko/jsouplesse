@@ -65,21 +65,7 @@ public class WebSite extends SuperDao {
 		name = sqlHelper.getString("name");
 		homePageUrl = sqlHelper.getString("homePageUrl");
 	}
-	
-	/**
-	 * Creates a new {@link WebPage} which is added to the list of web pages
-	 * for this web site, then returning the resulting object.
-	 * 
-	 * Deprecated, for hopefully obvious reasons.
-	 */
-	@Deprecated
-	public WebPage createWebPage(String pageUrl, int webPageTypeId) {
-		WebPage webPage = new WebPage(sqlHelper, pageUrl);
-		webPage.setWebPageTypeId(webPageTypeId);
-		webPages.add(webPage);
-		return webPage;
-	}
-	
+		
 	// Getters and setters
 	
 	public String getName() {
