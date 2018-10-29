@@ -9,9 +9,9 @@ import javafx.event.EventHandler;
 import javafx.geometry.HPos;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
-import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
+import javafx.scene.control.CheckBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import javafx.scene.control.Tooltip;
@@ -20,8 +20,6 @@ import javafx.scene.layout.GridPane;
 import javafx.scene.layout.Priority;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
-import javafx.stage.Stage;
-import javafx.stage.StageStyle;
 import jsouplesse.dataaccess.Connector;
 import jsouplesse.dataaccess.SqlHelper;
 import jsouplesse.scraping.ScrapeService;
@@ -49,6 +47,8 @@ public class MainScreenBuilder {
 	// Concrete screen elements.
 	
 	private TextField inputPageUrl;
+	
+	private CheckBox isTestRunCheckBox;
 	
 	private Button scrapeButton;
 	
@@ -124,6 +124,11 @@ public class MainScreenBuilder {
 		Tooltip pageUrlTooltip = new Tooltip("The full url of the page you want to scrape.");
 		inputPageUrl.setTooltip(pageUrlTooltip);
 		mainScreen.add(inputPageUrl, 1, 1);
+		
+		// Add a check box so the user can choose to do a test run.
+		isTestRunCheckBox = new CheckBox("Test");
+		isTestRunCheckBox.setTooltip(new Tooltip("Check to only retrieve one result."));
+		mainScreen.add(isTestRunCheckBox, 2, 1);
 		
 		addDynamicInputFields();
 	}
@@ -212,6 +217,7 @@ public class MainScreenBuilder {
 				// Construct the input for the service.
 				SpiderInput spiderInput = new SpiderInput();
 				spiderInput.pageUrl = inputPageUrl.getText();
+				spiderInput.isTestRun = isTestRunCheckBox.isSelected();
 				spiderInput.inputList = completeInput;
 				
 				// Let the service do its thing with the input.

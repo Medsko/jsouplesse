@@ -7,4 +7,6 @@ public class SpiderInput {
 	public String pageUrl;
 	
 	public List<ElementEvaluatorInput> inputList;
+	
+	public boolean isTestRun;
 }

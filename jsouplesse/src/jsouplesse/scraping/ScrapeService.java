@@ -48,7 +48,7 @@ public class ScrapeService {
 
 		// Use the builder to create an ElementSelector using the selector input.
 		ElementEvaluatorBuilder builder = new ElementEvaluatorBuilder(logger, sqlHelper);
-		scraper = builder.build(spiderInput.inputList, spiderInput.pageUrl);
+		scraper = builder.build(spiderInput);
 		
 		try {
 			if (!scraper.evaluate(spiderInput.pageUrl)) {

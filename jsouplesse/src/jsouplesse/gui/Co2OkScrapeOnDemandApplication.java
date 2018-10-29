@@ -35,7 +35,14 @@ public class Co2OkScrapeOnDemandApplication extends Application {
 		primaryStage.setScene(main);
 		primaryStage.setTitle("Co2ok scrape on demand");
 		addOnCloseFunction(primaryStage);
-		primaryStage.show();
+		
+		try {
+			primaryStage.show();
+		} catch (RuntimeException rex) {
+			for (StackTraceElement ste : rex.getStackTrace()) {
+				logger.log(ste.toString());
+			}
+		}
 	}
 	
 	private ScrollPane addScrollBar(Pane screenPart) {

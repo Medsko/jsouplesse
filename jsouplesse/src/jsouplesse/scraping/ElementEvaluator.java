@@ -168,15 +168,13 @@ public class ElementEvaluator {
 			} else {
 				webShopUrl = element.attr("href");
 			}
-			// Check if the result matches the most basic requirements for a URL.
-			if (webShopUrl.matches(WebStringUtils.INCLUSIVE_URL_REGEX)) {
-				
-				String companyName = WebStringUtils.determineWebSiteNameFromUrl(webShopUrl);
-				Company company = new Company(companyName);
-				company.setHomePageUrl(webShopUrl);				
-				companies.add(company);
-				logger.log("Successfully scraped: " + company.toString());
-			}
+			
+			String companyName = WebStringUtils.determineWebSiteNameFromUrl(webShopUrl);
+			Company company = new Company(companyName);
+			company.setHomePageUrl(webShopUrl);				
+			companies.add(company);
+			logger.log("Successfully scraped: " + company.toString());
+			
 		} else {
 			// A sub evaluation should be carried out.
 			if (shouldFetchWebPage) {
@@ -310,8 +308,14 @@ public class ElementEvaluator {
 		return companies;
 	}
 	
+	/** 
+	 * Sets the flag {@link #lastInChain} for this or, if it has a sub, for that evaluator. 
+	 */
 	public void setLastInChain(boolean lastInChain) {
-		this.lastInChain = lastInChain;
+		if (subEvaluator == null)
+			this.lastInChain = lastInChain;
+		else
+			subEvaluator.setLastInChain(lastInChain);
 	}
 
 	public String getWebSiteName() {
@@ -321,7 +325,6 @@ public class ElementEvaluator {
 
 	public void setSelectOnlyOne(boolean selectOnlyOne) {
 		this.selectOnlyOne = selectOnlyOne;
-		
 		if (subEvaluator != null)
 			subEvaluator.setSelectOnlyOne(selectOnlyOne);
 	}

@@ -4,6 +4,7 @@ import java.util.List;
 
 import jsouplesse.dataaccess.SqlHelper;
 import jsouplesse.gui.ElementEvaluatorInput;
+import jsouplesse.gui.SpiderInput;
 import jsouplesse.util.CrappyLogger;
 
 /**
@@ -36,26 +37,26 @@ public class ElementEvaluatorBuilder {
 	 * @return the {@link ElementEvaluator}, potentially containing a chain of 
 	 * sub evaluators.
 	 */
-	public ElementEvaluator build(List<ElementEvaluatorInput> inputList, String grandParentUrl) {
+	public ElementEvaluator build(SpiderInput input) {
 		
-		webPageFetcher = new WebPageFetcher(logger, sqlHelper, grandParentUrl);
+		webPageFetcher = new WebPageFetcher(logger, sqlHelper, input.pageUrl);
 		
 		ElementEvaluator subEvaluator = null;
 		
-		for (ElementEvaluatorInput input : inputList) {
+		for (ElementEvaluatorInput eeInput : input.inputList) {
 			if (elementEvaluator == null) {
 				// Build the primary ElementEvaluator.
-				elementEvaluator = build(input, grandParentUrl);
+				elementEvaluator = build(eeInput, input.pageUrl);
 			} else {
 				// Build a new ElementEvaluator and set it on the primary evaluator.
-				subEvaluator = build(input, grandParentUrl);
+				subEvaluator = build(eeInput, input.pageUrl);
 				elementEvaluator.setSubElementEvaluator(subEvaluator);
 			}
 		}
-		// Set a flag on the last sub evaluator to signify it is the last in the chain.
-		subEvaluator.setLastInChain(true);
+		// Set a flag on the last evaluator to signify it is the last in the chain.
+		elementEvaluator.setLastInChain(true);
 		// For testing purposes: only execute the crawl path once.
-		elementEvaluator.setSelectOnlyOne(true);
+		elementEvaluator.setSelectOnlyOne(input.isTestRun);
 		
 		return elementEvaluator;
 	}
