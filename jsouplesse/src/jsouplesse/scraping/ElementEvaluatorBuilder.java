@@ -1,7 +1,5 @@
 package jsouplesse.scraping;
 
-import java.util.List;
-
 import jsouplesse.dataaccess.SqlHelper;
 import jsouplesse.gui.ElementEvaluatorInput;
 import jsouplesse.gui.SpiderInput;
@@ -20,7 +18,7 @@ public class ElementEvaluatorBuilder {
 	
 	private SqlHelper sqlHelper;
 	
-	private WebPageFetcher webPageFetcher;
+	private ContentFetcher webPageFetcher;
 	
 	private ElementEvaluator elementEvaluator;
 	
@@ -39,7 +37,7 @@ public class ElementEvaluatorBuilder {
 	 */
 	public ElementEvaluator build(SpiderInput input) {
 		
-		webPageFetcher = new WebPageFetcher(logger, sqlHelper, input.pageUrl);
+		webPageFetcher = new ContentFetcher(logger, sqlHelper, input.pageUrl);
 		
 		ElementEvaluator subEvaluator = null;
 		
@@ -54,7 +52,7 @@ public class ElementEvaluatorBuilder {
 			}
 		}
 		// Set a flag on the last evaluator to signify it is the last in the chain.
-		elementEvaluator.setLastInChain(true);
+		elementEvaluator.setLastInChain();
 		// For testing purposes: only execute the crawl path once.
 		elementEvaluator.setSelectOnlyOne(input.isTestRun);
 		
@@ -73,6 +71,7 @@ public class ElementEvaluatorBuilder {
 		evaluator.setShouldFetchWebPage(input.getShouldFetchWebPage());
 		evaluator.setShouldFetchTextInLink(input.getShouldFetchTextInLink());
 		evaluator.setParentUrl(grandParentUrl);
+		evaluator.setShouldHuntForLogo(input.getShouldHuntForLogo());
 				
 		return evaluator;
 	}

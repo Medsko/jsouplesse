@@ -9,7 +9,6 @@ import java.nio.file.StandardOpenOption;
 import java.util.List;
 
 import jsouplesse.dataaccess.dao.Company;
-import jsouplesse.scraping.AbstractScanner;
 import jsouplesse.scraping.ElementEvaluator;
 
 public class CompanyFileWriter {

@@ -98,31 +98,7 @@ public class ScrapeService {
 
 		return true;
 	}
-	
-	public boolean saveFailedScansForWebsite(AbstractScanner scanner) {
-		
-		WebSite webSite = scanner.getWebSite();
-		
-		WebSiteSaveBuffer saveBuffer = new WebSiteSaveBuffer(sqlHelper);
-		saveBuffer.addWebSite(webSite);
-		
-		try {
 			
-			saveBuffer.saveWebSite();
-			
-		} catch (SQLException e) {
-			String errorMessage = saveBuffer.getResultMessage();
-			logger.log(errorMessage);
-			e.printStackTrace();
-			buildErrorAlert("Database fail!", errorMessage);
-		}
-		
-		buildSuccessAlert("Success!", "The web site's failed scans were successfully "
-				+ "saved to the database!");
-		
-		return true;
-	}
-		
 	private void buildErrorAlert(String title, String message) {
 		alert = new Alert(Alert.AlertType.ERROR);
 		alert.setTitle(title);

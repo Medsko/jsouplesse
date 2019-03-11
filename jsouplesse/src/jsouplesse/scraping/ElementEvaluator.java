@@ -31,7 +31,11 @@ public class ElementEvaluator {
 	
 	private boolean shouldFetchTextInLink;
 	
-	private WebPageFetcher webPageFetcher;
+	private ContentFetcher webPageFetcher;
+	
+	private boolean shouldHuntForLogo;
+	
+	private LogoHunter hunter;
 	
 	private String parentUrl;
 	
@@ -55,7 +59,7 @@ public class ElementEvaluator {
 	
 	public ElementEvaluator(CrappyLogger logger, 
 			SqlHelper sqlHelper, // Might get useful in the future...
-			WebPageFetcher webPageFetcher, 
+			ContentFetcher webPageFetcher, 
 			String selector) {
 		
 		this.logger = logger;
@@ -184,6 +188,13 @@ public class ElementEvaluator {
 				if (element == null)
 					// Failure to retrieve the web page. Result has been set.
 					return false;
+				
+				if (shouldHuntForLogo) {
+					// The logo should be tried to be retrieved from this freshly fetched page.
+					hunter = new LogoHunter(logger, webPageFetcher);
+					hunter.hunt(element, 
+							WebStringUtils.determineWebSiteNameFromUrl(webPage.getPageUrl()));
+				}
 			}
 			// Update the parent URL of the subEvaluator, if necessary.
 			subEvaluator.setParentUrl(WebStringUtils.determineBaseUrl(webPage.getPageUrl()));
@@ -200,7 +211,6 @@ public class ElementEvaluator {
 				if (!companies.contains(company))
 					companies.add(company);
 			}
-			
 		}
 		return true;
 	}
@@ -225,7 +235,7 @@ public class ElementEvaluator {
 		// If the URL is relative, resolve against parent.
 		pageUrl = WebStringUtils.resolveAgainstParent(pageUrl, parentUrl);
 		
-		if (!webPageFetcher.fetch(pageUrl)) {
+		if (!webPageFetcher.fetchWebPage(pageUrl)) {
 			handleSelectorError("ElementEvaluator.fetchPage() - the request for the web page " 
 					+ pageUrl + " did not return a response that could be parsed.");
 			return null;
@@ -304,18 +314,22 @@ public class ElementEvaluator {
 		this.shouldFetchTextInLink = shouldFetchTextInLink;
 	}
 
+	public void setShouldHuntForLogo(boolean shouldHuntForLogo) {
+		this.shouldHuntForLogo = shouldHuntForLogo;
+	}
+
 	public List<Company> getCompanies() {
 		return companies;
 	}
 	
 	/** 
-	 * Sets the flag {@link #lastInChain} for this or, if it has a sub, for that evaluator. 
+	 * Sets the flag {@link #lastInChain} for this or, if it has a sub, for that evaluator to true. 
 	 */
-	public void setLastInChain(boolean lastInChain) {
+	public void setLastInChain() {
 		if (subEvaluator == null)
-			this.lastInChain = lastInChain;
+			this.lastInChain = true;
 		else
-			subEvaluator.setLastInChain(lastInChain);
+			subEvaluator.setLastInChain();
 	}
 
 	public String getWebSiteName() {
@@ -328,7 +342,7 @@ public class ElementEvaluator {
 		if (subEvaluator != null)
 			subEvaluator.setSelectOnlyOne(selectOnlyOne);
 	}
-
+	
 	/**
 	 * Recursively collects all steps that were executed by this evaluator and all its 
 	 * sub-evaluators.

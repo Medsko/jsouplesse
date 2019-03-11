@@ -116,9 +116,12 @@ public class WebStringUtils {
 	 * @param parentUrl - the URL of the page the URL was found on.
 	 */
 	public static String resolveAgainstParent(String pageUrl, String parentUrl) {
-		if (pageUrl.startsWith("/"))
-			pageUrl = parentUrl + pageUrl;
-		return pageUrl;
+		if (pageUrl == null || !pageUrl.startsWith("/"))
+			// The URL is null or is not a relative URL. Return it as is.
+			return pageUrl;
+		else
+			// The URL is relative. Resolve it against its parent. 
+			return parentUrl + pageUrl;
 	}
 	
 	public static String formatPhoneNumber(String phoneNumber) {

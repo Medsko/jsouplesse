@@ -91,4 +91,13 @@ public class IOUtils {
 		
 		return relativeUrl;
 	}
+	
+	public static String determineFileExtension(String file) {
+		int lastPeriod = file.lastIndexOf(".");
+		if (lastPeriod > -1)
+			return file.substring(lastPeriod + 1);
+		else
+			return file;
+	}
+
 }

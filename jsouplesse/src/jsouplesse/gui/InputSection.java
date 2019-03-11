@@ -19,6 +19,8 @@ public class InputSection {
 	
 	private CheckBox fetchTextInLinkCheckBox;
 
+	private CheckBox huntLogoCheckBox;
+	
 	public Label getLabelTagName() {
 		return labelTag;
 	}
@@ -67,11 +69,20 @@ public class InputSection {
 		this.fetchTextInLinkCheckBox = fetchTextInLink;
 	}
 
+	public CheckBox getHuntLogoCheckBox() {
+		return huntLogoCheckBox;
+	}
+
+	public void setHuntLogoCheckBox(CheckBox huntLogoCheckBox) {
+		this.huntLogoCheckBox = huntLogoCheckBox;
+	}
+
 	public boolean isValid() {
 		return !inputTag.getText().isEmpty() || !inputAttribute.getText().isEmpty();
 	}
 	
 	public void removeInputSectionFromScreen(Pane screen) {
+		screen.getChildren().remove(huntLogoCheckBox);
 		screen.getChildren().remove(fetchPageCheckBox);
 		screen.getChildren().remove(fetchTextInLinkCheckBox);
 		screen.getChildren().remove(inputAttribute);
@@ -86,6 +97,7 @@ public class InputSection {
 		elementEvaluatorInput.setAttribute(inputAttribute.getText());
 		elementEvaluatorInput.setShouldFetchWebPage(fetchPageCheckBox.isSelected());
 		elementEvaluatorInput.setShouldFetchTextInLink(fetchTextInLinkCheckBox.isSelected());
+		elementEvaluatorInput.setShouldHuntForLogo(huntLogoCheckBox.isSelected());
 		return elementEvaluatorInput;
 	}
 }

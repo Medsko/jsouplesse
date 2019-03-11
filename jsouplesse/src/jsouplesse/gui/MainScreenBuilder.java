@@ -95,11 +95,11 @@ public class MainScreenBuilder {
 		
 		ColumnConstraints columnThreeConstraints = new ColumnConstraints(100, 100, Double.MAX_VALUE);
 		columnThreeConstraints.setHgrow(Priority.ALWAYS);
-		columnThreeConstraints.setHalignment(HPos.RIGHT);
+		columnThreeConstraints.setHalignment(HPos.LEFT);
 		
 		ColumnConstraints columnFourConstraints = new ColumnConstraints(100, 100, Double.MAX_VALUE);
 		columnFourConstraints.setHgrow(Priority.ALWAYS);
-		columnFourConstraints.setHalignment(HPos.RIGHT);
+		columnFourConstraints.setHalignment(HPos.LEFT);
 		
 		mainScreen.getColumnConstraints().addAll(columnOneConstraints, columnTwoConstraints, 
 				columnThreeConstraints, columnFourConstraints);

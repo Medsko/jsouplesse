@@ -1,5 +1,7 @@
 package jsouplesse.gui;
 
+import javafx.beans.value.ChangeListener;
+import javafx.beans.value.ObservableValue;
 import javafx.geometry.Pos;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.Label;
@@ -48,6 +50,19 @@ public class InputSectionBuilder {
 		CheckBox fetchPageCheckBox = new CheckBox("Fetch linked page");
 		screen.add(fetchPageCheckBox, 2, rowNumberAttribute);
 		fetchPageCheckBox.setAlignment(Pos.BOTTOM_LEFT);
+		
+		// Create a check box for retrieving the logo of the linked web shop page. 
+		CheckBox huntLogoCheckBox = new CheckBox("Fetch logo from page");
+		// This check box should only be shown when fetchPageCheckBox is selected.
+		huntLogoCheckBox.setVisible(false);
+	    fetchPageCheckBox.selectedProperty().addListener(new ChangeListener<Boolean>() {
+	        public void changed(ObservableValue<? extends Boolean> ov,
+	            Boolean old_val, Boolean new_val) {
+	        	huntLogoCheckBox.setVisible(new_val);
+	        }
+	    });
+
+		screen.add(huntLogoCheckBox, 3, rowNumberAttribute);
 				
 		// Create an InputSection and set the fields on it. 
 		InputSection inputSection = new InputSection();
@@ -57,6 +72,7 @@ public class InputSectionBuilder {
 		inputSection.setInputAttribute(inputAttribute);
 		inputSection.setFetchPageCheckBox(fetchPageCheckBox);
 		inputSection.setFetchTextInLinkCheckBox(fetchTextInLinkCheckBox);
+		inputSection.setHuntLogoCheckBox(huntLogoCheckBox);
 		
 		return inputSection;
 	}

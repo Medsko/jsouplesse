@@ -10,6 +10,8 @@ public class ElementEvaluatorInput {
 	
 	private boolean shouldFetchTextInLink;
 
+	private boolean shouldHuntForLogo;
+	
 	public String getTag() {
 		return tag;
 	}
@@ -40,5 +42,13 @@ public class ElementEvaluatorInput {
 
 	public void setShouldFetchTextInLink(boolean shouldFetchTextInLink) {
 		this.shouldFetchTextInLink = shouldFetchTextInLink;
+	}
+
+	public boolean getShouldHuntForLogo() {
+		return shouldHuntForLogo;
+	}
+
+	public void setShouldHuntForLogo(boolean shouldHuntForLogo) {
+		this.shouldHuntForLogo = shouldHuntForLogo;
 	}
 }

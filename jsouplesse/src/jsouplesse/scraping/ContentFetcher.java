@@ -5,8 +5,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
-import org.jsoup.HttpStatusException;
-import org.jsoup.Connection.Response;
 import org.jsoup.nodes.Document;
 
 import jsouplesse.dataaccess.SqlHelper;
@@ -15,14 +13,13 @@ import jsouplesse.util.CrappyLogger;
 import jsouplesse.util.WebStringUtils;
 
 /**
- * Builds new {@WebPage} objects and fetches their HTML document based
- * on an input URL.
+ * Fetches the content located at a given URL, be it a page or an image.
  * 
  * If a request has been made to the same web site too short a while ago,
  * the process is paused until a reasonable amount of time has passed.
  */
-public class WebPageFetcher {
-
+public class ContentFetcher {
+	
 	// Processing.
 	/** Used to log errors. */
 	private CrappyLogger logger;
@@ -30,7 +27,7 @@ public class WebPageFetcher {
 	private SqlHelper sqlHelper;
 	
 	/** Helper that creates and sends a human-like request and returns the response. */
-	private PlausibleRequestHelper hermes = new PlausibleRequestHelper();
+	private PlausibleRequestHelper hermes;
 	
 	/** Holds {@link WebSiteRequestConscience}s for every web site that requests are sent to. */
 	private Map<String, WebSiteRequestConscience> collectiveConscience;
@@ -49,11 +46,18 @@ public class WebPageFetcher {
 	// Output.
 	/** The web page being retrieved. */
 	private WebPage webPage;
+	
+	/** The image being retrieved, as a byte array. */
+	private byte[] fetchedImage;
 
-	public WebPageFetcher(CrappyLogger logger, SqlHelper sqlHelper, String grandParentUrl) {
+	/**
+	 * Constructor that does a whole lot of initializing. 
+	 */
+	public ContentFetcher(CrappyLogger logger, SqlHelper sqlHelper, String grandParentUrl) {
 		this.logger = logger;
 		this.sqlHelper = sqlHelper;
 		this.grandParentUrl = grandParentUrl;
+		this.hermes = new PlausibleRequestHelper(logger);
 		currentParentUrl = grandParentUrl;
 		collectiveConscience = new HashMap<>();
 	}
@@ -64,31 +68,17 @@ public class WebPageFetcher {
 	 * not be parsed, null is returned instead.
 	 * @return flag indicating success.
 	 */
-	public boolean fetch(String pageUrl) {
-				
-		if (pageUrl == null || pageUrl.isEmpty())
-			// If no URL is provided, no web page can be constructed.
-			return false;
-		
+	public boolean fetchWebPage(String pageUrl) {
 		// Resolve the pageUrl against its parent, if it is relative.
 		String fullPageUrl = WebStringUtils.resolveAgainstParent(pageUrl, currentParentUrl);
 
-		webPage = new WebPage(sqlHelper, fullPageUrl);
-		webPage.setWebPageTypeId(WebPage.TYPE_OTHER);
-
-		// Get or initialize the conscience for this web site.
-		WebSiteRequestConscience conscience = getWebSiteRequestConscience(fullPageUrl);
-		
-		// Check whether the request is moral (according to robots.txt).
-		if (!conscience.isRequestEthical(fullPageUrl))
-			// Do the right thing.
+		if (!performSharedChecks(fullPageUrl))
 			return false;
-		
-		// Our conscience is clear. Now hold off sending the next request until the time is right.
-		waitUntilTimeIsRight(conscience);
-		
+
 		// Attempt to retrieve the document of the page and set them on the web page object.
 		Document pageContents = getWebPageDocument(fullPageUrl);
+		webPage = new WebPage(sqlHelper, fullPageUrl);
+		webPage.setWebPageTypeId(WebPage.TYPE_OTHER);
 		webPage.setPageContents(pageContents);
 		
 		if (webPage.haveContentsBeenRetrieved()) {
@@ -102,6 +92,56 @@ public class WebPageFetcher {
 	}
 	
 	/**
+	 * Performs the standard checks that should be executed before making a request.
+	 * @return {@code boolean} indicating whether checks succeeded. 
+	 */
+	private boolean performSharedChecks(String url) {
+		if (url == null || url.isEmpty()) {
+			// If no URL is provided, no web page can be constructed.
+			logger.log("performSharedChecks() - a null or empty URL was provided.");
+			return false;
+		}
+		// Get or initialize the conscience for this web site.
+		WebSiteRequestConscience conscience = getWebSiteRequestConscience(url);
+		
+		// Check whether the request is moral (according to robots.txt).
+		if (!conscience.isRequestEthical(url)) {
+			// Do the right thing.
+			logger.log("performSharedChecks() - the requested URL is explicitly forbidden "
+					+ "according to robots.txt of web site" 
+					+ WebStringUtils.determineWebSiteNameFromUrl(url));
+			return false;
+		}
+		// Our conscience is clear. Now hold off sending the next request until the time is right.
+		waitUntilTimeIsRight(conscience);
+		
+		return true;
+	}
+	
+	/**
+	 * Attempts to fetch the image located at the provided URL.
+	 * @param url - the location of the desired image.
+	 * @return {@code boolean} indicating success.  
+	 */
+	public boolean fetchImage(String url) {
+		// Resolve the URL against its parent, if it is relative.
+		String fullImageUrl = WebStringUtils.resolveAgainstParent(url, currentParentUrl);
+		
+		if (!performSharedChecks(fullImageUrl))
+			return false;
+		
+		if (!hermes.sendImageRequest(fullImageUrl)) {
+			// The request failed.
+			logger.log("getWebPageDocument - fail while executing the request for URL: "
+					+ fullImageUrl);
+		}
+		
+		fetchedImage = hermes.getResponse().bodyAsBytes();
+		
+		return true;
+	} 
+	
+	/**
 	 * Retrieves the HTML document at the provided URL, parses it if possible and returns it.
 	 * 
 	 * @return the parsed HTML document, or null if something went wrong or the document could not
@@ -109,27 +149,24 @@ public class WebPageFetcher {
 	 */
 	private Document getWebPageDocument(String fullPageUrl) {
 		
-		Document pageContents = null;		
+		Document pageContents = null;
 		try {
-			// Use the helper to construct a human-like request.
-			Response response = hermes.sendRequest(fullPageUrl);
+			if (!hermes.sendPageRequest(fullPageUrl)) {
+				// The request failed.
+				logger.log("getWebPageDocument - fail while executing the request for URL: "
+						+ fullPageUrl);
+			}
 			
 			if (hermes.getCanParseResponse())
 				// Parse the results and set the resulting HTML document on the list page.
-				pageContents = response.parse();
-			
-		} catch (HttpStatusException hsex) {
-			// The request returned a HTTP error.
-			if (hsex.getStatusCode() == 403) {
-				// If we've been blocked, further scanning is pointless...for now.
-				shouldResumeScanning = false;
-				logger.log("WebPageInitializer got a 'Forbidden' code response!");
-			}
+				pageContents = hermes.getResponse().parse();
 			
 		} catch (IOException ioex) {
-			logger.log("WebPageFetcher.fetch() - I/O exception during request.");
+			logger.log("WebPageFetcher.getWebPageDocument() - failed to parse as HTML document.");
 			logger.log(ioex.getMessage());
 		}
+		
+		shouldResumeScanning = hermes.getShouldResumeScanning();
 		
 		return pageContents;
 	}
@@ -203,6 +240,10 @@ public class WebPageFetcher {
 	
 	public WebPage getWebPage() {
 		return webPage;
+	}
+
+	public byte[] getFetchedImage() {
+		return fetchedImage;
 	}
 
 	public String getGrandParentUrl() {
